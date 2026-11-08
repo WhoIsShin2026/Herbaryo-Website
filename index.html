@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Herbaryo</title>
+    <link rel="icon" type="image/png" sizes="64x64" href="./img/logo/favicon.png">
+    <link rel="apple-touch-icon" href="./img/logo/apple-touch-icon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
@@ -19,7 +21,7 @@
         <div class="nav-container">
             <div class="logo">
                 <a href="#home" class="logo-link">
-                    <h2>HERBARYO</h2>
+                    <img class="site-logo" src="./img/logo/herbaryo-logo.png" alt="Herbaryo" width="384" height="120">
                 </a>
             </div>
             <button class="hamburger" id="hamburgerBtn" type="button" aria-label="Open navigation menu"
@@ -33,8 +35,10 @@
                 <li><a href="#features">Game</a></li>
                 <li><a href="#herbs">Herbs</a></li>
                 <li><a href="#screenshots">Screenshots</a></li>
+                <li><a href="#news">News</a></li>
                 <li><a href="#download">Download</a></li>
                 <li><a href="./about/about.html">Team</a></li>
+                <li id="dashboardNavItem" hidden><a href="./dashboard/dashboard.html">Dashboard</a></li>
                 <li><a href="#" class="login-btn" id="authBtn">Login →</a></li>
             </ul>
         </div>
@@ -136,83 +140,83 @@
             </p>
             <div class="herbs-grid">
                 <div class="herb-card">
-                    <div class="herb-image bawang-bg">🧄</div>
+                    <div class="herb-image bawang-bg"><img class="herb-icon" src="./img/herbs/bawang.webp" alt="Bawang" width="256" height="256" loading="lazy" decoding="async"></div>
                     <div class="herb-info">
                         <h3>Bawang</h3>
                         <p class="herb-scientific">Allium sativum</p>
-                        <p class="herb-use">Lowers blood pressure & cholesterol</p>
+                        <p class="herb-use">Traditionally used for high blood pressure & cholesterol</p>
                     </div>
                 </div>
                 <div class="herb-card">
-                    <div class="herb-image sambong-bg">🍃</div>
+                    <div class="herb-image sambong-bg"><img class="herb-icon" src="./img/herbs/sambong.webp" alt="Sambong" width="256" height="256" loading="lazy" decoding="async"></div>
                     <div class="herb-info">
                         <h3>Sambong</h3>
                         <p class="herb-scientific">Blumea balsamifera</p>
-                        <p class="herb-use">Dissolves kidney stones</p>
+                        <p class="herb-use">Traditionally used for kidney stones</p>
                     </div>
                 </div>
                 <div class="herb-card">
-                    <div class="herb-image tsaang-bg">🌿</div>
+                    <div class="herb-image tsaang-bg"><img class="herb-icon" src="./img/herbs/tsaang-gubat.webp" alt="Tsaang Gubat" width="256" height="256" loading="lazy" decoding="async"></div>
                     <div class="herb-info">
                         <h3>Tsaang Gubat</h3>
                         <p class="herb-scientific">Ehretia microphylla</p>
-                        <p class="herb-use">Stops diarrhea & stomach ache</p>
+                        <p class="herb-use">Traditionally used for stomach pains</p>
                     </div>
                 </div>
                 <div class="herb-card">
-                    <div class="herb-image ampalaya-bg">🥒</div>
+                    <div class="herb-image ampalaya-bg"><img class="herb-icon" src="./img/herbs/ampalaya.webp" alt="Ampalaya" width="256" height="256" loading="lazy" decoding="async"></div>
                     <div class="herb-info">
                         <h3>Ampalaya</h3>
                         <p class="herb-scientific">Momordica charantia</p>
-                        <p class="herb-use">Lowers blood sugar (diabetes)</p>
+                        <p class="herb-use">Traditionally used to help manage diabetes</p>
                     </div>
                 </div>
                 <div class="herb-card">
-                    <div class="herb-image yerba-bg">🌱</div>
+                    <div class="herb-image yerba-bg"><img class="herb-icon" src="./img/herbs/yerba-buena.webp" alt="Yerba Buena" width="256" height="256" loading="lazy" decoding="async"></div>
                     <div class="herb-info">
                         <h3>Yerba Buena</h3>
                         <p class="herb-scientific">Mentha arvensis</p>
-                        <p class="herb-use">Stomach pain & muscle pain relief</p>
+                        <p class="herb-use">Traditionally used for toothaches & headaches</p>
                     </div>
                 </div>
                 <div class="herb-card">
-                    <div class="herb-image ulasimang-bg">🌿</div>
+                    <div class="herb-image ulasimang-bg"><img class="herb-icon" src="./img/herbs/ulasimang-bato.webp" alt="Ulasimang Bato" width="256" height="256" loading="lazy" decoding="async"></div>
                     <div class="herb-info">
                         <h3>Ulasimang Bato</h3>
                         <p class="herb-scientific">Peperomia pellucida</p>
-                        <p class="herb-use">Treats gout & rheumatism</p>
+                        <p class="herb-use">Traditionally used for gout</p>
                     </div>
                 </div>
                 <div class="herb-card">
-                    <div class="herb-image bayabas-bg">🍈</div>
+                    <div class="herb-image bayabas-bg"><img class="herb-icon" src="./img/herbs/bayabas.webp" alt="Bayabas" width="256" height="256" loading="lazy" decoding="async"></div>
                     <div class="herb-info">
                         <h3>Bayabas</h3>
                         <p class="herb-scientific">Psidium guajava</p>
-                        <p class="herb-use">Wound healing & diarrhea</p>
+                        <p class="herb-use">Traditionally used to wash wounds & for swollen gums</p>
                     </div>
                 </div>
                 <div class="herb-card">
-                    <div class="herb-image akapulko-bg">🌸</div>
+                    <div class="herb-image akapulko-bg"><img class="herb-icon" src="./img/herbs/akapulko.webp" alt="Akapulko" width="256" height="256" loading="lazy" decoding="async"></div>
                     <div class="herb-info">
                         <h3>Akapulko</h3>
                         <p class="herb-scientific">Cassia alata</p>
-                        <p class="herb-use">Anti-fungal treatment (ringworm, scabies)</p>
+                        <p class="herb-use">Traditionally used for ringworm & other fungal skin infections</p>
                     </div>
                 </div>
                 <div class="herb-card">
-                    <div class="herb-image lagundi-bg">🌿</div>
+                    <div class="herb-image lagundi-bg"><img class="herb-icon" src="./img/herbs/lagundi.webp" alt="Lagundi" width="256" height="256" loading="lazy" decoding="async"></div>
                     <div class="herb-info">
                         <h3>Lagundi</h3>
                         <p class="herb-scientific">Vitex negundo</p>
-                        <p class="herb-use">Relieves cough & asthma</p>
+                        <p class="herb-use">Traditionally used for cough & asthma</p>
                     </div>
                 </div>
                 <div class="herb-card">
-                    <div class="herb-image niyog-bg">🌰</div>
+                    <div class="herb-image niyog-bg"><img class="herb-icon" src="./img/herbs/niyog-niyogan.webp" alt="Niyog-niyogan" width="256" height="256" loading="lazy" decoding="async"></div>
                     <div class="herb-info">
                         <h3>Niyog-niyogan</h3>
                         <p class="herb-scientific">Quisqualis indica</p>
-                        <p class="herb-use">Expels intestinal worms</p>
+                        <p class="herb-use">Traditionally used to expel intestinal worms</p>
                     </div>
                 </div>
             </div>
@@ -223,6 +227,8 @@
                     </a>
                 </p>
                 <p>All herbs clinically tested per DOH standards</p>
+                <p class="herb-notice"><strong>For learning only.</strong> Not medical advice. Please consult a doctor
+                    before using any herbal remedy.</p>
             </div>
         </div>
     </section>
@@ -280,6 +286,14 @@
         <button class="screenshot-preview-close" type="button" aria-label="Close screenshot preview">&times;</button>
         <img id="screenshotPreviewImage" alt="">
     </dialog>
+    <section id="news" class="section news-section">
+        <div class="container">
+            <h2 class="section-title">News &amp; Updates</h2>
+            <div class="news-list" id="newsList">
+                <p class="news-empty">Loading news...</p>
+            </div>
+        </div>
+    </section>
     <section id="download" class="section specs-section">
         <div class="container">
             <h2 class="section-title">Download Herbaryo</h2>
@@ -297,7 +311,7 @@
                     <div class="spec-list">
                         <div class="spec-item">
                             <span class="spec-label">Android</span>
-                            <span class="spec-value">12</span>
+                            <span class="spec-value">8.1</span>
                         </div>
                         <div class="spec-item">
                             <span class="spec-label">RAM</span>
@@ -337,7 +351,8 @@
                     <p class="spec-note">60 FPS smooth gameplay</p>
                 </article>
             </div>
-            <a class="btn-primary download-section-button"
+            <p class="latest-version" id="latestVersion" hidden></p>
+            <a class="btn-primary download-section-button" id="downloadLink"
                 href="https://drive.google.com/drive/folders/1fg5rgtoKrS7zhRemYla1BgGeqGggdjDI" target="_blank"
                 rel="noopener noreferrer">Download Now</a>
         </div>
@@ -360,7 +375,7 @@
                 </button>
             </div>
             <h1 id="privacyPolicyTitle">HERBARYO PRIVACY POLICY</h1>
-            <p class="policy-date">Last updated: 10/24/2026</p>
+            <p class="policy-date">Last updated: 11/08/2026</p>
             <p class="policy-intro">At the HERBARYO Development team, we respect your privacy. This Privacy Policy
                 explains how we collect, use, disclose, and safeguard your information when you play our game or visit
                 our website.</p>
@@ -372,7 +387,11 @@
                 <li><strong>Information Collected Automatically:</strong> Hardware specifications, operating system,
                     IP address, device identifiers, gameplay analytics (statistics, session length), and crash reports.
                 </li>
-                <li><strong>Communications:</strong> Chat logs and support tickets.</li>
+                <li><strong>Game Progress:</strong> A summary of each save slot (chapter, day, Aurels, reputation, play
+                    time, last played and game version), and the achievements you earn and when you earned them.</li>
+                <li><strong>Communications:</strong> Chat logs, and the bug reports and feedback you send us. A report
+                    sent from the game includes your phone model, RAM, Android version, game version, current chapter
+                    and day, whether you were playing solo or co-op, and your graphics setting.</li>
             </ul>
 
             <h2>2. HOW WE USE YOUR INFORMATION</h2>
@@ -394,9 +413,13 @@
             </ul>
 
             <h2>4. YOUR PRIVACY RIGHTS</h2>
-            <p>Depending on your region (such as GDPR or CCPA), you have the right to:</p>
+            <p>Under the Data Privacy Act of 2012 (Republic Act No. 10173) of the Philippines, and depending on your
+                region (such as GDPR or CCPA), you have the right to:</p>
             <ul>
                 <li>Access, correct, or request the deletion of your personal data.</li>
+                <li>Delete your account at any time from your Dashboard using Delete My Account. This removes your
+                    account, username, progress and achievements. Reports you sent are kept without your name. Saves
+                    stored on your phone stay on your phone.</li>
                 <li>Opt-out of marketing communications.</li>
                 <li>Contact our Data Protection Officer at <a href="mailto:byry2535@gmail.com">byry2535@gmail.com</a>
                     with any privacy-related questions or requests.</li>

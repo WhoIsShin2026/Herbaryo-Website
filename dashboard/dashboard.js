@@ -12,21 +12,12 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-const generalAchievementCatalog = [
-    ['hello_world', 'Hello, World!', 'First login into the game'],
-    ['we_need_to_cook', 'We need to Cook', 'Make your first remedy'],
-    ['no_more_limits', 'No More Limits', 'Buy the full version of the game'],
-    ['serious_dedication', 'Serious Dedication', 'Survive 20 days'],
-    ['good_neighbour', 'Good Neighbour', 'Keep 100 reputation for at least 5 days'],
-    ['a_whole_new_world', 'A Whole New World', "Join another player's world"],
-    ['master_herbalist', 'Master Herbalist', 'Master all 10 herbs'],
-    ['becoming_an_apprentice', 'Becoming an Apprentice', 'Complete the tutorial'],
-    ['ohhh_kawaiii', 'Ohhh Kawaaiii', 'Use your first emote'],
-    ['press_b_button', 'Press B Button', 'Purchase a boots upgrade'],
-    ['brochure_expert', 'Brochure Expert', 'Purchase all upgrades']
-];
+const generalAchievementCatalog = HerbaryoSchema.achievementCatalog;
 
 let currentUserData = {};
+let currentAchievements = {};
+let achievementDates = {};
+let deletingAccount = false;
 let selectedAvatarPath = HerbaryoSchema.defaultAvatarPath;
 
 function getInitials(username = 'Herbalist') {
@@ -51,7 +42,13 @@ function updateUserUI(userData) {
     avatar.textContent = '';
 }
 
+function unlockedText(key) {
+    const date = achievementDates[key] ? HerbaryoSchema.formatDate(achievementDates[key]) : '';
+    return date ? `Unlocked · ${date}` : 'Unlocked';
+}
+
 function renderAchievements(achievementData = {}) {
+    currentAchievements = achievementData;
     const achievements = generalAchievementCatalog.map(([key, title, description]) => ({
         key,
         title,
@@ -66,7 +63,7 @@ function renderAchievements(achievementData = {}) {
             type="button" data-achievement-key="${achievement.key}"
             aria-label="View ${achievement.title} achievement details">
             <strong>${achievement.title}</strong>
-            <span>${achievement.unlocked ? 'Unlocked' : achievement.description}</span>
+            <span>${achievement.unlocked ? unlockedText(achievement.key) : achievement.description}</span>
         </button>
     `).join('');
 }
@@ -85,7 +82,10 @@ document.getElementById('achievementList').addEventListener('click', event => {
     }
 
     document.getElementById('achievementDialogTitle').textContent = achievement[1];
-    document.getElementById('achievementDialogDescription').textContent = achievement[2];
+    document.getElementById('achievementDialogDescription').textContent =
+        currentAchievements[achievement[0]] === true
+            ? `${achievement[2]}. ${unlockedText(achievement[0])}.`
+            : achievement[2];
     achievementDialog.showModal();
 });
 document.getElementById('closeAchievementDialog').addEventListener('click', () => {
@@ -181,7 +181,7 @@ const editProfileModal = createProfileModal('edit-profile-modal', `
             <button class="edit-close" id="closeEditBtn" type="button" aria-label="Close editor">&times;</button>
         </header>
         <label class="edit-field" for="editUsername">Username
-            <input type="text" id="editUsername" minlength="3" maxlength="20" autocomplete="username" required>
+            <input type="text" id="editUsername" minlength="3" maxlength="14" autocomplete="username" required>
         </label>
         <fieldset class="profile-color-field">
             <legend class="edit-field">Profile color</legend>
@@ -360,18 +360,24 @@ document.getElementById('editForm').addEventListener('submit', async event => {
     event.preventDefault();
     const error = document.getElementById('editError');
     const username = document.getElementById('editUsername').value.trim();
+    const usernameChanged = username !== (currentUserData.username || '');
+    const usernameProblem = usernameChanged ? HerbaryoSchema.usernameProblem(username) : null;
 
-    if (username.length < 3) {
-        error.textContent = 'Username must be at least 3 characters.';
+    if (usernameProblem) {
+        error.textContent = usernameProblem;
         return;
     }
 
     try {
-        await db.ref(`herbaryo-users/${auth.currentUser.uid}`).update({
-            username,
-            photoURL: selectedAvatarPath,
-            color: selectedProfileColor
-        });
+        const fields = { photoURL: selectedAvatarPath, color: selectedProfileColor };
+        if (usernameChanged) {
+            await HerbaryoSchema.saveUsernameAndProfile(
+                db, auth.currentUser.uid, currentUserData.username, username, fields
+            );
+            document.getElementById('usernameNotice')?.remove();
+        } else {
+            await db.ref(`herbaryo-users/${auth.currentUser.uid}`).update(fields);
+        }
         currentUserData = {
             ...currentUserData,
             username,
@@ -382,7 +388,7 @@ document.getElementById('editForm').addEventListener('submit', async event => {
         openMiniProfile('#openEditProfileBtn');
     } catch (updateError) {
         console.error(updateError);
-        error.textContent = 'Unable to save your profile right now.';
+        error.textContent = HerbaryoSchema.usernameErrorText(updateError, 'Unable to save your profile right now.');
     }
 });
 
@@ -427,8 +433,9 @@ auth.onAuthStateChanged(async user => {
 
     const userRef = db.ref(`herbaryo-users/${user.uid}`);
 
+    let migratedProfile;
     try {
-        await HerbaryoSchema.migrateUser(userRef, user);
+        migratedProfile = await HerbaryoSchema.migrateUser(userRef, user);
     } catch (error) {
         console.error('Failed to migrate player profile:', error);
         const notice = document.createElement('p');
@@ -440,7 +447,12 @@ auth.onAuthStateChanged(async user => {
         return;
     }
 
+    checkUsernameReserved(user.uid, migratedProfile.username);
+    showVerifyNotice(user);
+    watchPlayerData(user.uid);
+
     userRef.on('value', snapshot => {
+        if (deletingAccount) return;
         const data = snapshot.val() || {};
         currentUserData = data;
 
@@ -536,4 +548,289 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
             confirmButton.textContent = 'Log out';
         }
     });
+});
+
+// ---- Username reserved, like the game's
+async function checkUsernameReserved(uid, username) {
+    try {
+        if (await HerbaryoSchema.reserveExistingUsername(db, uid, username)) return;
+        const notice = document.createElement('p');
+        notice.id = 'usernameNotice';
+        notice.className = 'profile-migration-error';
+        notice.setAttribute('role', 'alert');
+        notice.textContent =
+            'Your username cannot be used in the game. Tap Edit and choose a new one (3-14 letters, numbers or _).';
+        document.querySelector('main')?.prepend(notice);
+    } catch (error) {
+        console.error('Failed to reserve the username:', error);
+    }
+}
+
+// ---- What the game sends: progress and achievement dates; and this player's own reports
+function watchPlayerData(uid) {
+    db.ref(`progress/${uid}`).on('value', snapshot => {
+        if (!deletingAccount) renderProgress(snapshot.val() || {});
+    }, error => {
+        console.error('Failed to load progress:', error);
+        document.getElementById('progressContent').innerHTML =
+            '<p class="panel-note">Your progress could not be loaded right now.</p>';
+    });
+
+    db.ref(`achievement-dates/${uid}`).on('value', snapshot => {
+        if (deletingAccount) return;
+        achievementDates = snapshot.val() || {};
+        renderAchievements(currentAchievements);
+    }, error => console.error('Failed to load achievement dates:', error));
+
+    db.ref('reports').orderByChild('uid').equalTo(uid).on('value', snapshot => {
+        if (deletingAccount) return;
+        const reports = [];
+        snapshot.forEach(child => { reports.push(child.val()); });
+        renderMyReports(reports.reverse());
+    }, error => {
+        console.error('Failed to load reports:', error);
+        document.getElementById('myReports').innerHTML =
+            '<p class="panel-note">Your reports could not be loaded right now.</p>';
+    });
+}
+
+function playTimeText(minutes) {
+    const total = Math.max(0, Math.floor(Number(minutes) || 0));
+    return `${Math.floor(total / 60)}h ${total % 60}m`;
+}
+
+function renderProgress(slots) {
+    const stat = (label, value) => `
+        <div class="stat-card"><span>${label}</span><strong>${HerbaryoSchema.escapeHtml(value)}</strong></div>`;
+
+    document.getElementById('progressContent').innerHTML = [1, 2, 3].map(number => {
+        const slot = slots[`slot${number}`];
+        if (!slot) {
+            return `<article class="progress-slot empty"><h3>Slot ${number}</h3><p>Empty slot</p></article>`;
+        }
+        const details = [
+            slot.lastPlayed ? `Last played ${HerbaryoSchema.formatDate(slot.lastPlayed)}` : '',
+            slot.version ? `Version ${HerbaryoSchema.escapeHtml(slot.version)}` : ''
+        ].filter(Boolean).join(' · ');
+        return `
+            <article class="progress-slot">
+                <div class="progress-slot-head"><h3>Slot ${number}</h3><span>${details}</span></div>
+                <div class="save-stats">
+                    ${stat('Chapter', slot.chapter)}
+                    ${stat('Day', slot.day)}
+                    ${stat('Aurels', slot.aurels)}
+                    ${stat('Reputation', slot.reputation)}
+                    ${stat('Play time', playTimeText(slot.playMinutes))}
+                </div>
+            </article>`;
+    }).join('');
+}
+
+function renderMyReports(reports) {
+    const list = document.getElementById('myReports');
+    if (!reports.length) {
+        list.innerHTML = '<p class="panel-note">You have not sent any reports yet.</p>';
+        return;
+    }
+
+    list.innerHTML = reports.map(report => {
+        const status = ['New', 'Seen', 'Fixed'].includes(report.status) ? report.status : 'New';
+        return `
+            <article class="report-card">
+                <div class="report-card-head">
+                    <strong>${HerbaryoSchema.escapeHtml(report.type)}</strong>
+                    <span>${HerbaryoSchema.formatDate(report.createdAt)}</span>
+                    <span class="report-status ${status.toLowerCase()}">${status}</span>
+                </div>
+                <p>${HerbaryoSchema.escapeHtml(report.message)}</p>
+            </article>`;
+    }).join('');
+}
+
+// ---- Report / Feedback: the report and its time go up together, so the database can hold it to one a minute
+const reportMessage = document.getElementById('reportMessage');
+reportMessage.addEventListener('input', () => {
+    document.getElementById('reportCount').textContent = `${reportMessage.value.length}/1000`;
+});
+
+document.getElementById('reportForm').addEventListener('submit', async event => {
+    event.preventDefault();
+    const error = document.getElementById('reportError');
+    const button = document.getElementById('reportSendBtn');
+    const message = reportMessage.value.trim();
+    const user = auth.currentUser;
+    error.textContent = '';
+    if (!user) return;
+    if (!message) {
+        error.textContent = 'Please write your message first.';
+        return;
+    }
+
+    const timestamp = firebase.database.ServerValue.TIMESTAMP;
+    const id = db.ref('reports').push().key;
+    button.disabled = true;
+    try {
+        await db.ref().update({
+            [`reports/${id}`]: {
+                uid: user.uid,
+                username: String(currentUserData.username || 'Herbalist').slice(0, 30),
+                type: document.getElementById('reportType').value,
+                message,
+                source: 'website',
+                status: 'New',
+                createdAt: timestamp,
+                info: { device: navigator.userAgent.slice(0, 80) }
+            },
+            [`report-times/${user.uid}`]: timestamp
+        });
+        reportMessage.value = '';
+        document.getElementById('reportCount').textContent = '0/1000';
+    } catch (sendError) {
+        console.error('Failed to send report:', sendError);
+        error.textContent = String(sendError.code || sendError.message).toUpperCase().includes('PERMISSION')
+            ? 'You can send one report per minute. Please wait and try again.'
+            : 'Unable to send your report right now.';
+    } finally {
+        button.disabled = false;
+    }
+});
+
+// ---- Delete My Account
+const deleteAccountModal = createProfileModal('delete-account-modal', `
+    <form class="edit-form profile-dialog" id="deleteAccountForm" role="alertdialog" aria-modal="true"
+        aria-labelledby="deleteAccountTitle">
+        <header class="edit-header">
+            <div>
+                <span class="edit-kicker">This cannot be undone</span>
+                <h2 id="deleteAccountTitle">Delete your account?</h2>
+            </div>
+            <button class="edit-close" id="closeDeleteAccountBtn" type="button" aria-label="Close">&times;</button>
+        </header>
+        <p class="edit-note">Your account, username, progress and achievements will be removed. Your reports stay
+            with the team as "Deleted player".</p>
+        <label class="edit-field delete-account-field" for="deleteConfirmName">Type your username to confirm
+            <input type="text" id="deleteConfirmName" autocomplete="off" required>
+        </label>
+        <label class="edit-field" id="deletePasswordField" for="deletePassword">Your password
+            <input type="password" id="deletePassword" autocomplete="current-password">
+        </label>
+        <p class="edit-google-note" id="deleteGoogleNote" hidden>Google will ask you to sign in once more.</p>
+        <p class="edit-error" id="deleteAccountError" role="alert"></p>
+        <div class="edit-buttons">
+            <button type="button" class="btn-cancel" id="cancelDeleteAccountBtn">Keep my account</button>
+            <button type="submit" class="delete-account-btn" id="confirmDeleteAccountBtn">Delete forever</button>
+        </div>
+    </form>
+`);
+
+function deleteAccountHasPassword() {
+    return auth.currentUser?.providerData.some(provider => provider.providerId === 'password') === true;
+}
+
+document.getElementById('deleteAccountBtn').addEventListener('click', event => {
+    previousEditTrigger = event.currentTarget;
+    const hasPassword = deleteAccountHasPassword();
+    document.getElementById('deleteConfirmName').value = '';
+    document.getElementById('deletePassword').value = '';
+    document.getElementById('deleteAccountError').textContent = '';
+    document.getElementById('deletePasswordField').hidden = !hasPassword;
+    document.getElementById('deletePassword').required = hasPassword;
+    document.getElementById('deleteGoogleNote').hidden = hasPassword;
+    openProfileModal(deleteAccountModal, '#deleteConfirmName');
+});
+document.getElementById('closeDeleteAccountBtn').addEventListener('click', closeProfileModal);
+document.getElementById('cancelDeleteAccountBtn').addEventListener('click', closeProfileModal);
+
+async function confirmIdentity(user) {
+    if (deleteAccountHasPassword()) {
+        const credential = firebase.auth.EmailAuthProvider.credential(
+            user.email,
+            document.getElementById('deletePassword').value
+        );
+        await user.reauthenticateWithCredential(credential);
+    } else {
+        await user.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider());
+    }
+}
+
+function deleteAccountErrorText(error) {
+    if (['auth/wrong-password', 'auth/invalid-credential', 'auth/invalid-login-credentials'].includes(error.code)) {
+        return 'Your password is incorrect. Nothing was deleted.';
+    }
+    if (error.code === 'auth/user-mismatch') return 'Please choose the Google account you signed up with.';
+    if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+        return 'Sign-in was cancelled. Nothing was deleted.';
+    }
+    if (error.code === 'auth/popup-blocked') return 'Please allow pop-ups for this site and try again.';
+    return 'Unable to delete your account right now. Please try again.';
+}
+
+document.getElementById('deleteAccountForm').addEventListener('submit', async event => {
+    event.preventDefault();
+    const user = auth.currentUser;
+    const error = document.getElementById('deleteAccountError');
+    const button = document.getElementById('confirmDeleteAccountBtn');
+    const username = currentUserData.username || '';
+    error.textContent = '';
+    if (!user) return;
+    if (document.getElementById('deleteConfirmName').value.trim() !== username) {
+        error.textContent = 'That is not your username. Nothing was deleted.';
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = 'Deleting...';
+    try {
+        const adminSnapshot = await db.ref(`admins/${user.uid}`).get();
+        if (adminSnapshot.val() === true) {
+            error.textContent = 'This is an admin account. Remove it from admins in Firebase first.';
+            return;
+        }
+        await confirmIdentity(user);
+
+        // The data goes first: once the account itself is gone, the rules can't allow anything.
+        deletingAccount = true;
+        const updates = await HerbaryoSchema.accountRemovalUpdates(db, user.uid, username, true);
+        await HerbaryoSchema.anonymizeReports(db, user.uid);
+        await db.ref().update(updates);
+        await user.delete();
+        window.location.replace('../index.html');
+    } catch (deleteError) {
+        console.error('Failed to delete the account:', deleteError);
+        deletingAccount = false;
+        error.textContent = deleteAccountErrorText(deleteError);
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Delete forever';
+    }
+});
+
+// ---- Verify your email: a reminder only - a correct email and password always log in
+async function showVerifyNotice(user) {
+    try {
+        await user.reload();   // (a link clicked in another tab or on the phone)
+    } catch (error) {
+        console.error('Failed to refresh the account:', error);
+    }
+    document.getElementById('verifyNotice').hidden = auth.currentUser?.emailVerified !== false;
+}
+
+document.getElementById('resendVerifyBtn').addEventListener('click', async event => {
+    const button = event.currentTarget;
+    const status = document.getElementById('verifyStatus');
+    const user = auth.currentUser;
+    if (!user) return;
+
+    button.disabled = true;
+    try {
+        await user.sendEmailVerification({ url: new URL('../index.html?emailVerification=success', window.location.href).href });
+        status.textContent = 'Verification email sent. Please check your inbox and spam folder.';
+        window.setTimeout(() => { button.disabled = false; }, 60000);
+    } catch (error) {
+        console.error('Failed to resend the verification email:', error);
+        status.textContent = error.code === 'auth/too-many-requests'
+            ? 'Too many tries. Please wait a moment and try again.'
+            : 'Unable to send the email right now. Please try again.';
+        button.disabled = false;
+    }
 });

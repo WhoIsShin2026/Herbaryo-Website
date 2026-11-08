@@ -32,6 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Admin verified ✅');
                 initAdminUI(user);
                 loadUsers();
+                initAdminTabs();
+                loadReports();
+                loadNewsAdmin();
             } else {
                 console.log('Not admin ❌');
                 showAdminAccessStatus(
@@ -236,10 +239,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>
                     <span class="player-name-cell">
                         <img class="player-avatar" src="${HerbaryoSchema.normalizeAvatar(user.photoURL)}" alt="">
-                        <span>${user.username}</span>
+                        <span>${HerbaryoSchema.escapeHtml(user.username)}</span>
                     </span>
                 </td>
-                <td>${user.email}</td>
+                <td>${HerbaryoSchema.escapeHtml(user.email)}</td>
                 <td>
                     <button class="action-btn btn-view" data-uid="${user.uid}">View</button>
                     <button class="action-btn btn-edit" data-uid="${user.uid}">Edit</button>
@@ -269,8 +272,8 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.innerHTML = `
             <section class="delete-dialog" role="alertdialog" aria-modal="true" aria-labelledby="deleteDialogTitle" aria-describedby="deleteDialogDescription">
                 <span class="delete-dialog-kicker">Manage Players</span>
-                <h2 id="deleteDialogTitle">Delete ${player?.username || 'this player'}?</h2>
-                <p id="deleteDialogDescription">This permanently removes the player's account profile and achievement record.</p>
+                <h2 id="deleteDialogTitle">Delete ${HerbaryoSchema.escapeHtml(player?.username || 'this player')}?</h2>
+                <p id="deleteDialogDescription">This permanently removes the player's profile, progress and achievements, and frees their username. Their reports stay as "Deleted player". Their login is not removed, so they can sign up again as a new player.</p>
                 <div class="delete-dialog-actions">
                     <button class="delete-cancel-btn" id="cancelDeleteBtn" type="button">Cancel</button>
                     <button class="delete-confirm-btn" id="confirmDeleteBtn" type="button">Delete player</button>
@@ -300,7 +303,9 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmButton.textContent = 'Deleting...';
 
             try {
-                await db.ref(`herbaryo-users/${uid}`).remove();
+                const updates = await HerbaryoSchema.accountRemovalUpdates(db, uid, player?.username, false);
+                await HerbaryoSchema.anonymizeReports(db, uid);
+                await db.ref().update(updates);
                 closeModal();
                 showAdminToast('Player deleted successfully.', 'success');
                 await loadUsers();
@@ -315,19 +320,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function showUserModal(userData) {
         if (!userData) return;
 
-        const achievementLabels = {
-            a_whole_new_world: 'A Whole New World',
-            becoming_an_apprentice: 'Becoming an Apprentice',
-            brochure_expert: 'Brochure Expert',
-            good_neighbour: 'Good Neighbour',
-            hello_world: 'Hello, World!',
-            master_herbalist: 'Master Herbalist',
-            no_more_limits: 'No More Limits',
-            ohhh_kawaiii: 'Ohhh Kawaaiii',
-            press_b_button: 'Press B Button',
-            serious_dedication: 'Serious Dedication',
-            we_need_to_cook: 'We need to Cook'
-        };
+        const achievementLabels = Object.fromEntries(
+            HerbaryoSchema.achievementCatalog.map(([key, title]) => [key, title])
+        );
         const achievements = userData.achievements || {};
         const unlockedCount = Object.keys(achievementLabels)
             .filter(key => achievements[key] === true).length;
@@ -378,7 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="edit-form">
                     <label class="field-group">
                         <span>Username</span>
-                        <input type="text" id="editName" minlength="3" maxlength="20" required>
+                        <input type="text" id="editName" minlength="3" maxlength="14" required>
                     </label>
                     <div class="edit-avatar-section">
                         <span class="edit-avatar-label">Profile avatar</span>
@@ -432,6 +427,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            const newUsername = usernameInput.value.trim();
+            const usernameChanged = newUsername !== (userData.username || '');
+            const usernameProblem = usernameChanged ? HerbaryoSchema.usernameProblem(newUsername) : null;
+            if (usernameProblem) {
+                showAdminToast(usernameProblem, 'error');
+                return;
+            }
+
             const button = modal.querySelector('#saveEditBtn');
             button.disabled = true;
             try {
@@ -440,11 +443,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     email: userData.email,
                     displayName: userData.username
                 });
-                await userRef.update({
-                    username: usernameInput.value.trim(),
-                    photoURL: selectedAvatarPath,
-                    account_type: accountTypeInput.value
-                });
+                const fields = { photoURL: selectedAvatarPath, account_type: accountTypeInput.value };
+                if (usernameChanged) {
+                    await HerbaryoSchema.saveUsernameAndProfile(db, uid, userData.username, newUsername, fields);
+                } else {
+                    await userRef.update(fields);
+                }
                 const snapshot = await userRef.once('value');
                 modal.remove();
                 await loadUsers();
@@ -452,7 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.error('Failed to update player:', error);
                 button.disabled = false;
-                showAdminToast('Failed to save player changes. Please try again.', 'error');
+                showAdminToast(HerbaryoSchema.usernameErrorText(error, 'Failed to save player changes. Please try again.'), 'error');
             }
         };
     }
@@ -460,5 +464,205 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateStats(users) {
         const totalUsersEl = document.getElementById('totalUsers');
         if (totalUsersEl) totalUsersEl.textContent = users.length;
+    }
+
+    // ---- The three tabs: Players, Reports, News
+    function initAdminTabs() {
+        const tabs = document.getElementById('adminTabs');
+        tabs.hidden = false;
+        tabs.addEventListener('click', event => {
+            const tab = event.target.closest('[data-admin-tab]');
+            if (!tab) return;
+
+            tabs.querySelectorAll('[data-admin-tab]').forEach(other => {
+                const isActive = other === tab;
+                other.classList.toggle('active', isActive);
+                other.setAttribute('aria-selected', String(isActive));
+                document.getElementById(other.dataset.adminTab).hidden = !isActive;
+            });
+        });
+    }
+
+    // ---- Reports
+    let allReports = [];
+
+    function loadReports() {
+        db.ref('reports').limitToLast(300).on('value', snapshot => {
+            allReports = [];
+            snapshot.forEach(child => { allReports.push({ ...child.val(), id: child.key }); });
+            allReports.reverse();
+
+            const newCount = allReports.filter(report => report.status === 'New').length;
+            const badge = document.getElementById('newReportsCount');
+            badge.textContent = newCount;
+            badge.hidden = newCount === 0;
+            renderReports();
+        }, error => {
+            console.error('Failed to load reports:', error);
+            document.getElementById('adminReportsList').innerHTML = '<p class="admin-note">Reports could not be loaded.</p>';
+        });
+
+        document.getElementById('reportTypeFilter').addEventListener('change', renderReports);
+        document.getElementById('reportStatusFilter').addEventListener('change', renderReports);
+        document.getElementById('adminReportsList').addEventListener('click', async event => {
+            const button = event.target.closest('[data-report-status]');
+            if (!button) return;
+
+            try {
+                await db.ref(`reports/${button.dataset.reportId}/status`).set(button.dataset.reportStatus);
+            } catch (error) {
+                console.error('Failed to update the report:', error);
+                showAdminToast('Failed to update the report.', 'error');
+            }
+        });
+    }
+
+    function renderReports() {
+        const type = document.getElementById('reportTypeFilter').value;
+        const status = document.getElementById('reportStatusFilter').value;
+        const reports = allReports.filter(report => (!type || report.type === type) && (!status || report.status === status));
+        const list = document.getElementById('adminReportsList');
+        const esc = HerbaryoSchema.escapeHtml;
+
+        if (!reports.length) {
+            list.innerHTML = '<p class="admin-note">No reports here.</p>';
+            return;
+        }
+
+        list.innerHTML = reports.map(report => {
+            const info = Object.entries(report.info || {}).map(([key, value]) => `${key}: ${value}`).join(' · ');
+            return `
+                <article class="admin-card">
+                    <div class="admin-card-head">
+                        <strong>${esc(report.type)}</strong>
+                        <span>${esc(report.username)}</span>
+                        <span>${HerbaryoSchema.formatDate(report.createdAt)}</span>
+                        <span>From ${esc(report.source)}</span>
+                    </div>
+                    <p class="admin-card-text">${esc(report.message)}</p>
+                    ${info ? `<p class="admin-card-info">${esc(info)}</p>` : ''}
+                    <div class="admin-status-row">
+                        ${['New', 'Seen', 'Fixed'].map(value => `
+                            <button class="admin-status-btn${report.status === value ? ' active' : ''}" type="button"
+                                data-report-id="${esc(report.id)}" data-report-status="${value}">${value}</button>
+                        `).join('')}
+                    </div>
+                </article>`;
+        }).join('');
+    }
+
+    // ---- News and the latest version
+    const versionPattern = /^\d+(\.\d+){1,3}$/;
+    const defaultDownloadLink = document.getElementById('latestLinkInput');
+
+    function loadNewsAdmin() {
+        db.ref('meta/latest').once('value').then(snapshot => {
+            const latest = snapshot.val() || {};
+            document.getElementById('latestVersionInput').value = latest.version || '';
+            defaultDownloadLink.value = latest.downloadUrl || 'https://drive.google.com/drive/folders/1fg5rgtoKrS7zhRemYla1BgGeqGggdjDI';
+        }).catch(error => console.error('Failed to load the latest version:', error));
+
+        db.ref('meta/buyUrl').once('value').then(snapshot => {
+            document.getElementById('buyPageInput').value = snapshot.val() || '';
+        }).catch(error => console.error('Failed to load the Buy page link:', error));
+
+        document.getElementById('buyPageForm').addEventListener('submit', async event => {
+            event.preventDefault();
+            const link = document.getElementById('buyPageInput').value.trim();
+            if (!link.startsWith('https://')) {
+                showAdminToast('The link must start with https://', 'error');
+                return;
+            }
+            try {
+                await db.ref('meta/buyUrl').set(link);
+                showAdminToast('Buy page link saved.', 'success');
+            } catch (saveError) {
+                console.error('Failed to save the Buy page link:', saveError);
+                showAdminToast('Failed to save the Buy page link.', 'error');
+            }
+        });
+
+        document.getElementById('latestVersionForm').addEventListener('submit', async event => {
+            event.preventDefault();
+            const error = document.getElementById('latestVersionError');
+            const version = document.getElementById('latestVersionInput').value.trim();
+            const downloadUrl = defaultDownloadLink.value.trim();
+            error.textContent = '';
+            if (!versionPattern.test(version)) {
+                error.textContent = 'Use numbers and dots only, like 0.8.12.';
+                return;
+            }
+            if (!downloadUrl.startsWith('https://')) {
+                error.textContent = 'The link must start with https://';
+                return;
+            }
+
+            try {
+                await db.ref('meta/latest').set({ version, downloadUrl });
+                showAdminToast('Latest version saved.', 'success');
+            } catch (saveError) {
+                console.error('Failed to save the latest version:', saveError);
+                showAdminToast('Failed to save the latest version.', 'error');
+            }
+        });
+
+        document.getElementById('newsForm').addEventListener('submit', async event => {
+            event.preventDefault();
+            const form = event.currentTarget;
+            const title = document.getElementById('newsTitle').value.trim();
+            const text = document.getElementById('newsText').value.trim();
+            const version = document.getElementById('newsVersion').value.trim();
+            if (!title || !text) {
+                showAdminToast('Please write a title and text.', 'error');
+                return;
+            }
+
+            const post = { title, text, createdAt: firebase.database.ServerValue.TIMESTAMP };
+            if (version) post.version = version;
+            try {
+                await db.ref('news').push(post);
+                form.reset();
+                showAdminToast('News posted.', 'success');
+            } catch (postError) {
+                console.error('Failed to post news:', postError);
+                showAdminToast('Failed to post news.', 'error');
+            }
+        });
+
+        document.getElementById('adminNewsList').addEventListener('click', async event => {
+            const button = event.target.closest('[data-news-id]');
+            if (!button || !window.confirm('Delete this news post?')) return;
+
+            try {
+                await db.ref(`news/${button.dataset.newsId}`).remove();
+            } catch (error) {
+                console.error('Failed to delete the news post:', error);
+                showAdminToast('Failed to delete the news post.', 'error');
+            }
+        });
+
+        db.ref('news').limitToLast(50).on('value', snapshot => {
+            const posts = [];
+            snapshot.forEach(child => { posts.push({ ...child.val(), id: child.key }); });
+            posts.reverse();
+            const esc = HerbaryoSchema.escapeHtml;
+            document.getElementById('adminNewsList').innerHTML = posts.length
+                ? posts.map(post => `
+                    <article class="admin-card">
+                        <div class="admin-card-head">
+                            <strong>${esc(post.title)}</strong>
+                            <span>${HerbaryoSchema.formatDate(post.createdAt)}</span>
+                            ${post.version ? `<span>Version ${esc(post.version)}</span>` : ''}
+                        </div>
+                        <p class="admin-card-text">${esc(post.text)}</p>
+                        <div class="admin-status-row">
+                            <button class="action-btn btn-delete" type="button" data-news-id="${esc(post.id)}">Delete</button>
+                        </div>
+                    </article>`).join('')
+                : '<p class="admin-note">No news posted yet.</p>';
+        }, error => {
+            console.error('Failed to load news:', error);
+            document.getElementById('adminNewsList').innerHTML = '<p class="admin-note">News could not be loaded.</p>';
+        });
     }
 });

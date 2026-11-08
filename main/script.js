@@ -102,14 +102,22 @@ async function handleEmailLogin() {
     showLoading();
     try {
         const result = await auth.signInWithEmailAndPassword(email, password);
-        if (!result.user.emailVerified) {
-            await auth.signOut();
-            return showError('Please verify your email before logging in.');
-        }
         await checkUserProfile(result.user);
     } catch (error) {
-        showError(error.message);
+        console.error('Email login failed:', error);
+        showError(emailLoginErrorText(error));
     } finally { hideLoading(); }
+}
+
+// One message for a refused sign-in: it never says whether the email exists or how the account signs in.
+function emailLoginErrorText(error) {
+    switch (error.code) {
+        case 'auth/invalid-email': return "That email address isn't valid.";
+        case 'auth/network-request-failed': return 'No internet connection. Check it and try again.';
+        case 'auth/too-many-requests': return 'Too many tries. Wait a moment and try again.';
+        case 'auth/user-disabled': return 'This account has been turned off. Ask the admin.';
+        default: return 'Wrong email or password. Signed up with Google? Use the Google button.';
+    }
 }
 
 async function handleEmailSignup() {
@@ -135,8 +143,8 @@ async function handleEmailSignup() {
             ? { url: new URL('./index.html?emailVerification=success', window.location.href).href }
             : undefined;
         await result.user.sendEmailVerification(actionCodeSettings);
-        showError('Verification email sent. After verifying, return here to sign in.', true);
-        await auth.signOut();
+        showUsernameModal(result.user);
+        showError('We sent a verification link to your email.', true);
     } catch (error) {
         if (error.code === 'auth/email-already-in-use') showError('Email already registered. Try login.');
         else showError(error.message);
@@ -197,7 +205,7 @@ function showUsernameModal(user) {
     activeTab.innerHTML = `
         <div class="profile-setup">
             <p class="profile-setup-prompt">Choose your username and avatar:</p>
-            <input type="text" id="usernameInput" placeholder="Username" maxlength="20">
+            <input type="text" id="usernameInput" placeholder="3-14 letters, numbers or _" maxlength="14">
             <div class="profile-avatar-section">
                 <span class="profile-avatar-label">Choose your avatar</span>
                 <div class="profile-avatar-picker" id="profileAvatarPicker" role="group"
@@ -226,7 +234,7 @@ function showUsernameModal(user) {
     const usernameInput = document.getElementById('usernameInput');
     usernameInput.value = (
         user.email?.split('@')[0] || user.displayName || ''
-    ).slice(0, 20);
+    ).replace(/[^A-Za-z0-9_]/g, '').slice(0, 14);
     document.getElementById('profileAvatarPicker').addEventListener('click', event => {
         const option = event.target.closest('.profile-avatar-option');
         if (!option) return;
@@ -251,32 +259,30 @@ function showUsernameModal(user) {
 
 async function createProfile(user) {
     const username = document.getElementById('usernameInput').value.trim();
-    if (!username || username.length < 3) return showError('Username must be 3+ characters');
+    const usernameProblem = HerbaryoSchema.usernameProblem(username);
+    if (usernameProblem) return showError(usernameProblem);
 
     showLoading();
     try {
         await saveNewUserProfile(user, username);
         window.location.replace('./dashboard/dashboard.html');
-    } catch {
-        showError('Failed to save profile');
+    } catch (error) {
+        console.error('Failed to save profile:', error);
+        showError(HerbaryoSchema.usernameErrorText(error, 'Failed to save profile'));
     } finally { hideLoading(); }
 }
 
 async function saveNewUserProfile(user, usernameInput) {
     const uid = user.uid;
-    const displayName = usernameInput || user.displayName || 'Herbalist';
+    if (await HerbaryoSchema.usernameIsTaken(db, uid, usernameInput)) throw HerbaryoSchema.usernameTakenError();
+
     const userRef = db.ref(`herbaryo-users/${uid}`);
     const userSnap = await userRef.once('value');
-    if (!userSnap.exists()) {
-        const profile = HerbaryoSchema.createDefaultProfile(user, displayName);
-        profile.photoURL = selectedProfileAvatar;
-        await userRef.set(profile);
-        return;
-    }
+    const oldUsername = userSnap.val()?.username || '';
+    if (userSnap.exists()) await HerbaryoSchema.migrateUser(userRef, user);
+    else await userRef.set(HerbaryoSchema.createDefaultProfile(user, usernameInput));
 
-    await HerbaryoSchema.migrateUser(userRef, user);
-    await userRef.update({
-        username: displayName,
+    await HerbaryoSchema.saveUsernameAndProfile(db, uid, oldUsername, usernameInput, {
         email: user.email || '',
         photoURL: selectedProfileAvatar
     });
@@ -284,6 +290,9 @@ async function saveNewUserProfile(user, usernameInput) {
 
 auth.onAuthStateChanged(user => {
     const authBtn = document.getElementById('authBtn');
+    const dashboardNavItem = document.getElementById('dashboardNavItem');
+    if (dashboardNavItem) dashboardNavItem.hidden = !user;
+    authBtn.classList.toggle('is-logout', Boolean(user));
     if (user) {
         authBtn.textContent = 'Logout';
         authBtn.onclick = async e => { e.preventDefault(); await auth.signOut(); authBtn.textContent = 'Login →'; };
@@ -333,6 +342,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!dialog.open) dialog.showModal();
         });
     });
+
+    // The game's Sign In card links straight to a document (.../#eulaDialog).
+    const linkedDialog = document.getElementById(window.location.hash.slice(1));
+    if (linkedDialog instanceof HTMLDialogElement && linkedDialog.classList.contains('legal-dialog')) linkedDialog.showModal();
 
     legalDialogs.forEach(dialog => {
         dialog.querySelector('[data-close-legal]')?.addEventListener('click', () => dialog.close());
@@ -552,19 +565,78 @@ async function handleEmailVerificationRedirect() {
             await auth.applyActionCode(verificationCode);
         }
 
-        document.getElementById('signupTab').classList.remove('active');
-        document.getElementById('loginTab').classList.add('active');
-        loginModal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-        showError('Account created successfully! Your email is verified. You can now sign in.', true);
-
         ['emailVerification', 'mode', 'oobCode', 'apiKey', 'continueUrl', 'lang'].forEach(key => {
             params.delete(key);
         });
         window.history.replaceState({}, '', currentUrl);
+
+        // Still signed in on this browser: straight back to the Dashboard (its reminder is gone now).
+        const signedIn = await new Promise(resolve => {
+            const stop = auth.onAuthStateChanged(user => { stop(); resolve(user); });
+        });
+        if (signedIn) {
+            window.location.replace('./dashboard/dashboard.html');
+            return;
+        }
+
+        document.getElementById('signupTab').classList.remove('active');
+        document.getElementById('loginTab').classList.add('active');
+        loginModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        showError('Your email is verified. You can now sign in.', true);
     } catch (error) {
         showError('Email verification failed: ' + error.message);
     }
 }
 
 handleEmailVerificationRedirect();
+
+// Home page: the latest news, and the download link + version the team set in Admin.
+async function loadNews() {
+    const list = document.getElementById('newsList');
+    if (!list) return;
+
+    try {
+        const snapshot = await db.ref('news').limitToLast(3).once('value');
+        const posts = [];
+        snapshot.forEach(child => { posts.push(child.val()); });
+        posts.reverse();
+        list.innerHTML = posts.length
+            ? posts.map(post => `
+                <article class="news-card">
+                    <div class="news-card-meta">
+                        <span>${HerbaryoSchema.formatDate(post.createdAt)}</span>
+                        ${post.version ? `<span>Version ${HerbaryoSchema.escapeHtml(post.version)}</span>` : ''}
+                    </div>
+                    <h3>${HerbaryoSchema.escapeHtml(post.title)}</h3>
+                    <p>${HerbaryoSchema.escapeHtml(post.text)}</p>
+                </article>
+            `).join('')
+            : '<p class="news-empty">No news yet. Check back soon.</p>';
+    } catch (error) {
+        console.error('Failed to load news:', error);
+        list.innerHTML = '<p class="news-empty">News could not be loaded right now.</p>';
+    }
+}
+
+async function loadLatestVersion() {
+    const link = document.getElementById('downloadLink');
+    if (!link) return;
+
+    try {
+        const snapshot = await db.ref('meta/latest').once('value');
+        const latest = snapshot.val();
+        if (!latest) return;
+        if (String(latest.downloadUrl || '').startsWith('https://')) link.href = latest.downloadUrl;
+        const version = document.getElementById('latestVersion');
+        if (version && latest.version) {
+            version.textContent = `Latest version: ${latest.version}`;
+            version.hidden = false;
+        }
+    } catch (error) {
+        console.error('Failed to load the latest version:', error);   // the button keeps its usual link
+    }
+}
+
+loadNews();
+loadLatestVersion();

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herbaryo | Full Game</title>
+    <link rel="icon" type="image/png" sizes="64x64" href="../img/logo/favicon.png">
+    <link rel="apple-touch-icon" href="../img/logo/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="./buy.css">
+</head>
+
+<body>
+    <header class="buy-header">
+        <a href="../index.html"><img class="site-logo" src="../img/logo/herbaryo-logo.png" alt="Herbaryo" width="384"
+                height="120"></a>
+    </header>
+
+    <main class="buy-main">
+        <section class="buy-card">
+            <h1>Get the Full Game</h1>
+            <p class="buy-includes">Chapters 2 and 3, Co-op</p>
+            <p class="buy-price">P49</p>
+
+            <div class="buy-step" id="stepLoading">
+                <p>Loading...</p>
+            </div>
+
+            <form class="buy-step" id="stepSignIn" hidden>
+                <p>Sign in with the same account you use in the game.</p>
+                <label>Email
+                    <input type="email" id="buyEmail" autocomplete="email" required>
+                </label>
+                <label>Password
+                    <input type="password" id="buyPassword" autocomplete="current-password" required>
+                </label>
+                <button class="buy-primary" type="submit">Sign In</button>
+                <button class="buy-secondary" id="buyGoogle" type="button">Continue with Google</button>
+                <p class="buy-small">New here? <a href="../index.html#login">Create an account</a></p>
+            </form>
+
+            <div class="buy-step" id="stepProfile" hidden>
+                <p>Please finish your profile first.</p>
+                <a class="buy-primary" href="../index.html#login">Go to Login</a>
+            </div>
+
+            <div class="buy-step" id="stepVerify" hidden>
+                <p>Please verify your email address to continue.</p>
+                <button class="buy-primary" id="buyResend" type="button">Resend Email</button>
+            </div>
+
+            <div class="buy-step" id="stepBuy" hidden>
+                <p class="buy-for">Buying for <strong id="buyName"></strong></p>
+                <p class="buy-small" id="buyAccountEmail"></p>
+                <button class="buy-primary" id="buyNow" type="button">Buy</button>
+                <p class="buy-small">Test mode: no real money is charged.</p>
+            </div>
+
+            <div class="buy-step" id="stepWaiting" hidden>
+                <p>Confirming your payment...</p>
+            </div>
+
+            <div class="buy-step" id="stepOwned" hidden>
+                <p id="ownedText">You own the Full Game. Go back to the game to play.</p>
+            </div>
+
+            <p class="buy-message" id="buyMessage" role="status"></p>
+            <button class="buy-link" id="buySignOut" type="button" hidden>Not you? Sign out</button>
+        </section>
+    </main>
+
+    <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script defer src="./buy.js"></script>
+</body>
+
+</html>

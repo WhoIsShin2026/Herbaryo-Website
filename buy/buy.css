@@ -1,0 +1,154 @@
+:root {
+    --walnut: #5A3A28;
+    --chestnut: #8C6647;
+    --coffee: #2B1A0F;
+    --earth: #73543D;
+    --cream: #FFFBF2;
+    --champagne: #E7D9BD;
+    --vanilla: #FFF5E0;
+    --sage: #8DC46E;
+    --danger: #9B2C1F;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    line-height: 1.6;
+    color: var(--coffee);
+    background: var(--champagne);
+}
+
+[hidden] {
+    display: none !important;
+}
+
+.buy-header {
+    padding: .7rem 1rem;
+    background: var(--coffee);
+    border-bottom: 4px solid var(--chestnut);
+}
+
+.site-logo {
+    display: block;
+    width: auto;
+    height: 48px;
+}
+
+.buy-main {
+    display: flex;
+    justify-content: center;
+    padding: 2rem 1rem 3rem;
+}
+
+.buy-card {
+    width: min(460px, 100%);
+    padding: 1.75rem 1.5rem;
+    text-align: center;
+    background: var(--vanilla);
+    border: 4px solid var(--coffee);
+    box-shadow: 5px 5px 0 var(--coffee);
+}
+
+.buy-card h1 {
+    font-size: 1.6rem;
+    color: var(--walnut);
+}
+
+.buy-includes,
+.buy-small {
+    font-size: .88rem;
+    color: var(--earth);
+}
+
+.buy-price {
+    margin: .5rem 0 1rem;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--walnut);
+}
+
+.buy-step {
+    display: grid;
+    gap: .75rem;
+}
+
+.buy-for strong {
+    color: var(--walnut);
+}
+
+.buy-step label {
+    display: block;
+    font-size: .85rem;
+    font-weight: 700;
+    text-align: left;
+    color: var(--walnut);
+}
+
+.buy-step input {
+    display: block;
+    width: 100%;
+    margin-top: .3rem;
+    padding: .75rem .9rem;
+    font-family: inherit;
+    font-size: 1rem;
+    color: var(--coffee);
+    background: var(--cream);
+    border: 3px solid var(--chestnut);
+}
+
+.buy-primary,
+.buy-secondary {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+    padding: .7rem 1rem;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+    color: var(--coffee);
+    border: 3px solid var(--coffee);
+    cursor: pointer;
+    box-shadow: 0 4px 0 var(--coffee);
+}
+
+.buy-primary {
+    background: var(--sage);
+}
+
+.buy-secondary {
+    background: var(--cream);
+}
+
+.buy-primary:disabled {
+    opacity: .6;
+    cursor: default;
+}
+
+.buy-message:empty {
+    display: none;
+}
+
+.buy-message {
+    margin-top: .9rem;
+    font-size: .9rem;
+    font-weight: 600;
+    color: var(--danger);
+}
+
+.buy-link {
+    margin-top: 1rem;
+    font-family: inherit;
+    font-size: .85rem;
+    text-decoration: underline;
+    color: var(--earth);
+    background: none;
+    border: 0;
+    cursor: pointer;
+}

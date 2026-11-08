@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Herbaryo | Dashboard</title>
+    <link rel="icon" type="image/png" sizes="64x64" href="../img/logo/favicon.png">
+    <link rel="apple-touch-icon" href="../img/logo/apple-touch-icon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
@@ -19,9 +21,10 @@
         <div class="container">
             <nav class="dashboard-nav">
                 <div class="logo">
-                    <a href="#" class="logo-link">
-                        <h2>DASHBOARD</h2>
+                    <a href="../index.html" class="logo-link">
+                        <img class="site-logo" src="../img/logo/herbaryo-logo.png" alt="Herbaryo" width="384" height="120">
                     </a>
+                    <span class="page-tag">Dashboard</span>
                 </div>
                 <div class="dashboard-tools">
                     <button class="dashboard-menu-toggle" id="dashboardMenuBtn" type="button"
@@ -31,6 +34,7 @@
                         <span></span>
                     </button>
                     <div class="dashboard-actions" id="dashboardActions">
+                        <a class="home-btn" href="../index.html">Home</a>
                         <button class="edit-btn" id="editBtn">Edit</button>
                         <button class="admin-btn" id="adminBtn">Admin</button>
                         <button class="logout-btn" id="logoutBtn">Logout</button>
@@ -44,6 +48,14 @@
         <section class="dashboard-hero">
             <div class="hero-avatar" id="userAvatar" aria-hidden="true">H</div>
             <h1 id="welcomeText">Greetings, Herbalist</h1>
+        </section>
+
+        <section class="verify-notice" id="verifyNotice" hidden>
+            <div>
+                <p>Please verify your email address. This helps you recover your account if you lose access.</p>
+                <p class="verify-status" id="verifyStatus" role="status"></p>
+            </div>
+            <button class="btn-save" id="resendVerifyBtn" type="button">Resend Email</button>
         </section>
 
         <section class="dashboard-section personal-section">
@@ -77,6 +89,26 @@
             </div>
         </section>
 
+        <section class="dashboard-section progress-section">
+            <div class="section-heading section-heading-row">
+                <div class="section-heading-title">
+                    <h2>My Progress</h2>
+                    <button class="section-toggle" type="button" data-section-toggle="progressContent"
+                        data-section-name="My Progress" aria-expanded="true" aria-label="Hide My Progress"
+                        aria-controls="progressContent" title="Hide My Progress">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+                            <circle cx="12" cy="12" r="3" />
+                            <path class="toggle-eye-slash" d="m4 4 16 16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="section-content progress-list" id="progressContent">
+                <p class="panel-note">Loading your progress...</p>
+            </div>
+        </section>
+
         <section class="dashboard-section achievements-section">
             <div class="section-heading section-heading-row">
                 <div class="section-heading-title">
@@ -92,10 +124,62 @@
                         </svg>
                     </button>
                 </div>
-                <strong class="mastery-total" id="achievementCount">0/11</strong>
+                <strong class="mastery-total" id="achievementCount">0/14</strong>
             </div>
             <div class="section-content" id="accountAchievementsContent">
                 <div class="achievement-grid" id="achievementList"></div>
+            </div>
+        </section>
+
+        <section class="dashboard-section reports-section">
+            <div class="section-heading section-heading-row">
+                <div class="section-heading-title">
+                    <h2>Report / Feedback</h2>
+                    <button class="section-toggle" type="button" data-section-toggle="reportsContent"
+                        data-section-name="Report / Feedback" aria-expanded="true" aria-label="Hide Report / Feedback"
+                        aria-controls="reportsContent" title="Hide Report / Feedback">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+                            <circle cx="12" cy="12" r="3" />
+                            <path class="toggle-eye-slash" d="m4 4 16 16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="section-content" id="reportsContent">
+                <form class="report-form" id="reportForm">
+                    <label class="edit-field" for="reportType">Type
+                        <select id="reportType">
+                            <option value="Bug">Bug</option>
+                            <option value="Feedback">Feedback</option>
+                            <option value="Suggestion">Suggestion</option>
+                        </select>
+                    </label>
+                    <label class="edit-field" for="reportMessage">Message
+                        <textarea id="reportMessage" rows="4" maxlength="1000" required
+                            placeholder="Tell us what happened, or what you'd like to see."></textarea>
+                    </label>
+                    <div class="report-form-footer">
+                        <span id="reportCount">0/1000</span>
+                        <button class="btn-save" id="reportSendBtn" type="submit">Send</button>
+                    </div>
+                    <p class="edit-error" id="reportError" role="alert"></p>
+                </form>
+                <h3 class="reports-heading">My Reports</h3>
+                <div class="report-list" id="myReports">
+                    <p class="panel-note">Loading your reports...</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="dashboard-section delete-account-section">
+            <div class="section-heading">
+                <h2>Delete My Account</h2>
+            </div>
+            <div class="delete-account-card">
+                <p>This permanently removes your account, username, progress and achievements. Saves already on your
+                    phone stay on your phone.</p>
+                <button class="delete-account-btn" id="deleteAccountBtn" type="button">Delete My Account</button>
             </div>
         </section>
     </main>

@@ -1169,3 +1169,302 @@ main.container {
         text-align: left;
     }
 }
+
+/* My Progress, Report / Feedback, Delete My Account */
+.panel-note {
+    margin: 0;
+    padding: .9rem 1.1rem;
+    font-size: .92rem;
+    color: var(--earth);
+    background: var(--vanilla);
+    border: 4px solid var(--coffee);
+    box-shadow: var(--chip);
+}
+
+.progress-list {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.progress-list[hidden] {
+    display: none;
+}
+
+.progress-slot-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .15rem 1rem;
+    margin-bottom: .6rem;
+}
+
+.progress-slot h3,
+.reports-heading {
+    font-size: 1.05rem;
+    color: var(--walnut);
+}
+
+.progress-slot-head span {
+    font-size: .82rem;
+    color: var(--earth);
+}
+
+.progress-slot .save-stats {
+    margin-bottom: 0;
+}
+
+.progress-slot.empty {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .9rem 1.1rem;
+    background: var(--vanilla);
+    border: 4px solid var(--coffee);
+    box-shadow: var(--chip);
+    opacity: .75;
+}
+
+.progress-slot.empty p {
+    font-size: .9rem;
+    color: var(--earth);
+}
+
+.report-form,
+.delete-account-card {
+    padding: 1.1rem;
+    background: var(--vanilla);
+    border: 4px solid var(--coffee);
+    box-shadow: var(--chip);
+}
+
+.edit-field textarea {
+    display: block;
+    width: 100%;
+    margin-top: .4rem;
+    padding: .75rem .9rem;
+    font-family: inherit;
+    font-size: .95rem;
+    color: var(--coffee);
+    background: var(--cream);
+    border: 3px solid var(--chestnut);
+    resize: vertical;
+}
+
+.edit-field textarea:focus {
+    outline: none;
+    border-color: var(--coffee);
+    box-shadow: 0 0 0 4px var(--sage);
+}
+
+.report-form-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: .82rem;
+    color: var(--earth);
+}
+
+.reports-heading {
+    margin: 1.5rem 0 .6rem;
+}
+
+.report-list {
+    display: grid;
+    gap: .75rem;
+}
+
+.report-card {
+    padding: .8rem 1rem;
+    background: var(--vanilla);
+    border: 4px solid var(--coffee);
+    box-shadow: var(--chip);
+}
+
+.report-card-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .25rem .75rem;
+    font-size: .85rem;
+    color: var(--earth);
+}
+
+.report-card-head strong {
+    color: var(--walnut);
+}
+
+.report-card p {
+    margin-top: .35rem;
+    font-size: .92rem;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.report-status {
+    margin-left: auto;
+    padding: .05rem .6rem;
+    font-size: .76rem;
+    font-weight: 700;
+    color: var(--coffee);
+    background: var(--champagne);
+    border: 2px solid var(--coffee);
+}
+
+.report-status.seen {
+    background: #D9A24C;
+}
+
+.report-status.fixed {
+    background: var(--sage);
+}
+
+.delete-account-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-left: 10px solid var(--danger);
+}
+
+.delete-account-card p {
+    font-size: .92rem;
+}
+
+.delete-account-btn {
+    flex: none;
+    min-height: 42px;
+    padding: .6rem 1.2rem;
+    font-size: .9rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--danger);
+    border: 3px solid var(--coffee);
+    cursor: pointer;
+    box-shadow: 0 4px 0 var(--coffee);
+}
+
+.delete-account-btn:disabled,
+#reportSendBtn:disabled {
+    opacity: .6;
+    cursor: wait;
+}
+
+.delete-account-field {
+    margin-top: 1rem;
+}
+
+label.edit-field[hidden] {
+    display: none;
+}
+
+@media (max-width: 650px) {
+    .delete-account-card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .delete-account-modal .edit-buttons {
+        flex-direction: column-reverse;
+    }
+}
+
+.home-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: .55rem 1.2rem;
+    font-size: .9rem;
+    line-height: normal;
+    font-weight: 700;
+    color: var(--coffee);
+    text-decoration: none;
+    background: var(--vanilla);
+    border: 3px solid var(--coffee);
+    box-shadow: inset 0 3px 0 rgba(255, 255, 255, .4), inset 0 -3px 0 rgba(43, 26, 15, .25), 0 4px 0 #000;
+}
+
+@media (max-width: 650px) {
+    .dashboard-actions .home-btn {
+        width: 100%;
+    }
+}
+
+.site-logo {
+    display: block;
+    width: auto;
+    height: 52px;
+    cursor: pointer;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+}
+
+.page-tag {
+    padding: .1rem .6rem;
+    font-size: .85rem;
+    font-weight: 700;
+    color: var(--vanilla);
+    border-left: 3px solid var(--sage);
+}
+
+@media (max-width: 650px) {
+    .site-logo {
+        height: 36px;
+    }
+
+    .page-tag {
+        padding: .05rem .45rem;
+        font-size: .75rem;
+    }
+}
+
+.verify-notice {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: .9rem 1.1rem;
+    font-size: .92rem;
+    background: var(--vanilla);
+    border: 4px solid var(--coffee);
+    border-left: 10px solid #D9A24C;
+    box-shadow: var(--chip);
+}
+
+.verify-notice[hidden] {
+    display: none;
+}
+
+.verify-status:empty {
+    display: none;
+}
+
+.verify-status {
+    margin-top: .25rem;
+    font-weight: 600;
+    color: var(--walnut);
+}
+
+.verify-notice .btn-save {
+    flex: none;
+}
+
+.verify-notice .btn-save:disabled {
+    opacity: .6;
+    cursor: default;
+}
+
+@media (max-width: 650px) {
+    .verify-notice {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

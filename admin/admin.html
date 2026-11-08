@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Herbaryo | Admin</title>
+    <link rel="icon" type="image/png" sizes="64x64" href="../img/logo/favicon.png">
+    <link rel="apple-touch-icon" href="../img/logo/apple-touch-icon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
@@ -19,8 +21,9 @@
         <div class="container">
             <div class="logo">
                 <div class="logo-link" id="scrollToTop" aria-label="Admin page">
-                    <h2>ADMIN</h2>
+                    <img class="site-logo" src="../img/logo/herbaryo-logo.png" alt="Herbaryo" width="384" height="120">
                 </div>
+                <span class="page-tag">Admin</span>
             </div>
             <div class="admin-user">
                 <button class="admin-menu-toggle" id="adminMenuBtn" type="button" aria-label="Open admin menu"
@@ -39,6 +42,17 @@
 
     <main class="container">
         <div class="admin-access-status" id="adminAccessStatus" role="alert" hidden></div>
+        <div class="admin-tabs" id="adminTabs" role="tablist" aria-label="Admin sections" hidden>
+            <button class="admin-tab active" type="button" role="tab" aria-selected="true"
+                data-admin-tab="adminPlayersPanel">Players</button>
+            <button class="admin-tab" type="button" role="tab" aria-selected="false"
+                data-admin-tab="adminReportsPanel">Reports <span class="admin-tab-count" id="newReportsCount"
+                    hidden>0</span></button>
+            <button class="admin-tab" type="button" role="tab" aria-selected="false"
+                data-admin-tab="adminNewsPanel">News</button>
+        </div>
+
+        <div class="admin-panel" id="adminPlayersPanel">
         <section class="admin-stats">
             <h2>Total Players</h2>
             <div class="stats-grid">
@@ -71,6 +85,76 @@
                 </table>
             </div>
         </section>
+        </div>
+
+        <div class="admin-panel" id="adminReportsPanel" hidden>
+            <section class="users-section">
+                <h2>Reports</h2>
+                <div class="admin-filters">
+                    <label class="field-group">Type
+                        <select id="reportTypeFilter">
+                            <option value="">All</option>
+                            <option value="Bug">Bug</option>
+                            <option value="Feedback">Feedback</option>
+                            <option value="Suggestion">Suggestion</option>
+                        </select>
+                    </label>
+                    <label class="field-group">Status
+                        <select id="reportStatusFilter">
+                            <option value="">All</option>
+                            <option value="New">New</option>
+                            <option value="Seen">Seen</option>
+                            <option value="Fixed">Fixed</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="admin-card-list" id="adminReportsList">
+                    <p class="admin-note">Loading reports...</p>
+                </div>
+            </section>
+        </div>
+
+        <div class="admin-panel" id="adminNewsPanel" hidden>
+            <section class="users-section">
+                <h2>Latest Version</h2>
+                <form class="admin-form" id="latestVersionForm">
+                    <label class="field-group">Version
+                        <input type="text" id="latestVersionInput" maxlength="20" placeholder="0.8.12" required>
+                    </label>
+                    <label class="field-group">Download link
+                        <input type="url" id="latestLinkInput" maxlength="300" placeholder="https://drive.google.com/..."
+                            required>
+                    </label>
+                    <p class="admin-form-error" id="latestVersionError" role="alert"></p>
+                    <button class="action-btn btn-view" type="submit">Save Version</button>
+                </form>
+                <form class="admin-form" id="buyPageForm">
+                    <label class="field-group">Buy page link (the game opens this)
+                        <input type="url" id="buyPageInput" maxlength="300" placeholder="https://your-site.netlify.app/buy/buy.html"
+                            required>
+                    </label>
+                    <button class="action-btn btn-view" type="submit">Save Link</button>
+                </form>
+            </section>
+            <section class="users-section">
+                <h2>Post News</h2>
+                <form class="admin-form" id="newsForm">
+                    <label class="field-group">Title
+                        <input type="text" id="newsTitle" maxlength="80" required>
+                    </label>
+                    <label class="field-group">Text
+                        <textarea id="newsText" rows="5" maxlength="2000" required></textarea>
+                    </label>
+                    <label class="field-group">Version (optional)
+                        <input type="text" id="newsVersion" maxlength="20" placeholder="0.8.12">
+                    </label>
+                    <button class="action-btn btn-view" type="submit">Post</button>
+                </form>
+                <div class="admin-card-list" id="adminNewsList">
+                    <p class="admin-note">Loading news...</p>
+                </div>
+            </section>
+        </div>
     </main>
 
     <footer class="footer">
