@@ -1,9 +1,7 @@
 // PayMongo tells this address when a checkout is paid. Only a correctly signed message for the full price makes an account premium.
 // Safe to receive twice: a repeat just writes the same result. (So PayMongo's retries, which can be much later, are not refused by age.)
 const crypto = require('crypto');
-const { admin } = require('../lib/firebase');
-
-const PRICE_CENTAVOS = 4900;
+const { PRICE_CENTAVOS, grantFullGame } = require('../lib/purchase');
 
 function reply(statusCode, body) {
     return { statusCode, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
@@ -42,16 +40,7 @@ exports.handler = async event => {
         return reply(200, { received: true });
     }
 
-    const now = admin.database.ServerValue.TIMESTAMP;
-    const database = admin.database();
-    const existingDate = await database.ref(`achievement-dates/${uid}/no_more_limits`).once('value');
-    const updates = {
-        [`herbaryo-users/${uid}/account_type`]: 'premium',
-        [`herbaryo-users/${uid}/achievements/no_more_limits`]: true,
-        [`purchases/${session.id}`]: { uid, amount: PRICE_CENTAVOS, paidAt: now, livemode: attributes.livemode === true }
-    };
-    if (!existingDate.exists()) updates[`achievement-dates/${uid}/no_more_limits`] = now;
-    await database.ref().update(updates);
+    await grantFullGame(uid, session.id, { livemode: attributes.livemode === true });
     return reply(200, { received: true });
 };
 

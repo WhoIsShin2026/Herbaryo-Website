@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herbaryo | Simulated Checkout</title>
+    <link rel="icon" type="image/png" sizes="64x64" href="../img/logo/favicon.png">
+    <link rel="apple-touch-icon" href="../img/logo/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="./buy.css">
+</head>
+
+<body>
+    <header class="buy-header">
+        <a href="../index.html"><img class="site-logo" src="../img/logo/herbaryo-logo.png" alt="Herbaryo" width="384"
+                height="120"></a>
+    </header>
+
+    <main class="buy-main">
+        <section class="buy-card">
+            <h1>Simulated Checkout</h1>
+            <p class="sim-notice">Simulation only. No real money is charged.</p>
+            <p class="buy-includes">Herbaryo Full Game</p>
+            <p class="buy-price">P49</p>
+
+            <div class="buy-step" id="checkoutLoading">
+                <p>Loading...</p>
+            </div>
+
+            <form class="buy-step" id="checkoutForm" hidden>
+                <p class="buy-for">Buying for <strong id="checkoutName"></strong></p>
+                <fieldset class="sim-methods">
+                    <legend>Payment method</legend>
+                    <label><input type="radio" name="method" value="gcash" checked> GCash</label>
+                    <label><input type="radio" name="method" value="maya"> Maya</label>
+                    <label><input type="radio" name="method" value="card"> Card</label>
+                </fieldset>
+                <button class="buy-primary" id="checkoutPay" type="submit">Pay</button>
+                <button class="buy-secondary" id="checkoutFail" type="button">Simulate Failed Payment</button>
+                <a class="buy-small" href="./buy.html">Cancel</a>
+            </form>
+
+            <p class="buy-message" id="checkoutMessage" role="status"></p>
+        </section>
+    </main>
+
+    <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script defer src="./checkout.js"></script>
+</body>
+
+</html>

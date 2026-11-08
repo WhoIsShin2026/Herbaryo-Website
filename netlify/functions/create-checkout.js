@@ -1,7 +1,6 @@
 // Starts a payment for the signed-in player. The server decides who is paying and how much: nothing the browser sends can change either.
-const { admin } = require('../lib/firebase');
-
-const PRICE_CENTAVOS = 4900;   // P49
+// PAYMENT_MODE = "paymongo" uses PayMongo; anything else (the default) uses the Simulated Checkout page.
+const { PRICE_CENTAVOS, checkBuyer } = require('../lib/purchase');
 
 function reply(statusCode, body) {
     return { statusCode, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
@@ -10,19 +9,9 @@ function reply(statusCode, body) {
 exports.handler = async event => {
     if (event.httpMethod !== 'POST') return reply(405, { error: 'method' });
 
-    const header = event.headers.authorization || event.headers.Authorization || '';
-    const token = header.startsWith('Bearer ') ? header.slice(7) : '';
-    let player;
-    try {
-        player = await admin.auth().verifyIdToken(token);
-    } catch (error) {
-        return reply(401, { error: 'signin' });
-    }
-    if (player.email_verified !== true) return reply(403, { error: 'verify' });
-
-    const record = (await admin.database().ref(`herbaryo-users/${player.uid}`).once('value')).val();
-    if (!record || !record.username) return reply(404, { error: 'profile' });
-    if (record.account_type === 'premium') return reply(409, { error: 'owned' });
+    const buyer = await checkBuyer(event);
+    if (buyer.error) return reply(buyer.status, { error: buyer.error });
+    if (process.env.PAYMENT_MODE !== 'paymongo') return reply(200, { url: '/buy/checkout.html' });
 
     const site = process.env.URL;
     const response = await fetch('https://api.paymongo.com/v1/checkout_sessions', {
@@ -37,7 +26,7 @@ exports.handler = async event => {
                     line_items: [{ name: 'Herbaryo Full Game', quantity: 1, amount: PRICE_CENTAVOS, currency: 'PHP' }],
                     payment_method_types: ['gcash', 'paymaya', 'card'],
                     description: 'Herbaryo Full Game: Chapters 2 and 3, Co-op',
-                    metadata: { uid: player.uid },
+                    metadata: { uid: buyer.player.uid },
                     success_url: `${site}/buy/buy.html?paid=1`,
                     cancel_url: `${site}/buy/buy.html`
                 }
