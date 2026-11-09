@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 initAdminTabs();
                 loadReports();
                 loadNewsAdmin();
+                loadTrialsAdmin();
             } else {
                 console.log('Not admin ❌');
                 showAdminAccessStatus(
@@ -51,10 +52,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
-        searchInput.addEventListener('input', () => {
-            const query = searchInput.value.toLowerCase();
-            displayUsers(allUsers.filter(u => u.username.toLowerCase().includes(query) || u.email.toLowerCase().includes(query)));
-        });
+        searchInput.addEventListener('input', applyPlayerFilters);
+    }
+    const playerTypeFilter = document.getElementById('playerTypeFilter');
+    if (playerTypeFilter) playerTypeFilter.addEventListener('change', applyPlayerFilters);
+
+    // The search and the Show choice together; also used when the list reloads after an Edit or Delete.
+    function applyPlayerFilters() {
+        const query = (searchInput ? searchInput.value : '').toLowerCase();
+        const type = playerTypeFilter ? playerTypeFilter.value : '';
+        displayUsers(allUsers.filter(u => (!type || u.account_type === type)
+            && (u.username.toLowerCase().includes(query) || u.email.toLowerCase().includes(query))));
     }
 
     const logoutBtn = document.getElementById('logoutBtn');
@@ -211,10 +219,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            // One check per player: the rules let an admin read each entry, not the whole list.
+            const adminFlags = await Promise.all(users.map(user => db.ref(`admins/${user.uid}`).once('value')
+                .then(entry => entry.val() === true)
+                .catch(() => false)));
+            users.forEach((user, index) => { user.isAdmin = adminFlags[index]; });
+
             users.sort((a, b) => a.username.localeCompare(b.username, undefined, { sensitivity: 'base' }));
             allUsers = users;
             updateStats(users);
-            displayUsers(users);
+            applyPlayerFilters();
+            renderTrials();   // (the Trials list needs the players' names)
         } catch (err) {
             console.error('Failed to load users:', err);
             const tbody = document.querySelector('#usersTable tbody');
@@ -224,6 +239,13 @@ document.addEventListener('DOMContentLoaded', () => {
             );
         }
     }
+
+    const adminBadge = `<button class="player-admin-badge" type="button" data-tip="Admin" aria-label="Admin">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 2.8 4.6 5.6v5.9c0 4.7 3.1 8 7.4 9.7 4.3-1.7 7.4-5 7.4-9.7V5.6L12 2.8Z" />
+            <path class="shield-half" d="M12 2.8v18.4c4.3-1.7 7.4-5 7.4-9.7V5.6L12 2.8Z" />
+        </svg>
+    </button>`;
 
     function displayUsers(filteredUsers) {
         const tbody = document.querySelector('#usersTable tbody');
@@ -240,13 +262,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="player-name-cell">
                         <img class="player-avatar" src="${HerbaryoSchema.normalizeAvatar(user.photoURL)}" alt="">
                         <span>${HerbaryoSchema.escapeHtml(user.username)}</span>
+                        ${user.isAdmin ? adminBadge : ''}
+                        ${user.account_type === 'premium' ? `<img class="player-full-badge" src="${HerbaryoSchema.fullGameIcon}" alt="Full Game" title="Full Game" width="128" height="128">` : ''}
                     </span>
                 </td>
                 <td>${HerbaryoSchema.escapeHtml(user.email)}</td>
                 <td>
                     <button class="action-btn btn-view" data-uid="${user.uid}">View</button>
                     <button class="action-btn btn-edit" data-uid="${user.uid}">Edit</button>
-                    <button class="action-btn btn-delete" data-uid="${user.uid}">Delete</button>
+                    ${user.isAdmin ? '' : `<button class="action-btn btn-delete" data-uid="${user.uid}">Delete</button>`}
                 </td>
             </tr>
         `).join('');
@@ -267,6 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function deleteUser(uid, trigger) {
         const player = allUsers.find(user => user.uid === uid);
+        if (player?.isAdmin) return;   // remove the admin role in Firebase first
         const modal = document.createElement('div');
         modal.className = 'user-modal delete-modal';
         modal.innerHTML = `
@@ -335,10 +360,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="view-name-row">
                         <img class="view-player-avatar" src="${HerbaryoSchema.normalizeAvatar(userData.photoURL)}" alt="">
                         <h2 class="player-name"></h2>
-                        <span class="account-type-badge">${userData.account_type === 'premium' ? 'Premium' : 'Free'}</span>
+                        <span class="account-type-badge">${userData.account_type === 'premium' ? 'Full Game' : 'Free'}</span>
                     </div>
                     <p class="player-email"></p>
                 </div>
+                <section class="view-modal-section">
+                    <div class="view-section-heading"><h3>Progress</h3></div>
+                    <div class="view-progress"><p class="view-note">Loading progress...</p></div>
+                </section>
+                <section class="view-modal-section">
+                    <div class="view-section-heading"><h3>Trials</h3></div>
+                    <div class="view-trials"></div>
+                </section>
                 <section class="view-modal-section">
                     <div class="view-section-heading">
                         <h3>General Achievements</h3>
@@ -352,13 +385,68 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.querySelector('.view-achievement-grid').innerHTML = Object.entries(achievementLabels)
             .map(([key, title]) => `
                 <div class="view-achievement-card ${achievements[key] === true ? 'unlocked' : 'locked'}">
-                    <strong>${title}</strong>
-                    <span>${achievements[key] === true ? 'Unlocked' : 'Locked'}</span>
+                    <img class="view-achievement-icon" src="${HerbaryoSchema.achievementIcon(key)}" alt="" width="160" height="160">
+                    <div>
+                        <strong>${title}</strong>
+                        <span>${achievements[key] === true ? 'Unlocked' : 'Locked'}</span>
+                    </div>
                 </div>
             `).join('');
+        modal.querySelector('.view-trials').innerHTML = viewTrialsHtml(allTrials[userData.uid]);
+        const progressBox = modal.querySelector('.view-progress');
+        db.ref(`progress/${userData.uid}`).once('value')
+            .then(snapshot => { progressBox.innerHTML = viewProgressHtml(snapshot.val() || {}); })
+            .catch(error => {
+                console.error('Failed to load the player\'s progress:', error);
+                progressBox.innerHTML = '<p class="view-note">Progress could not be loaded right now.</p>';
+            });
         document.body.appendChild(modal);
         modal.querySelector('.modal-close').onclick = () => modal.remove();
         modal.onclick = event => { if (event.target === modal) modal.remove(); };
+    }
+
+    // ---- View: the player's saves and Trials (read-only)
+    function viewPlayTime(minutes) {
+        const total = Math.max(0, Math.floor(Number(minutes) || 0));
+        return `${Math.floor(total / 60)}h ${total % 60}m`;
+    }
+
+    function viewProgressHtml(slots) {
+        const esc = HerbaryoSchema.escapeHtml;
+        const stat = (label, value, icon) => `
+            <div class="view-stat"><span>${icon ? `<img src="${icon}" alt="" width="96" height="96">` : ''}${label}</span><strong>${esc(value ?? 0)}</strong></div>`;
+        return [1, 2, 3].map(number => {
+            const slot = slots[`slot${number}`];
+            if (!slot) return `<p class="view-note"><strong>Slot ${number}</strong> · Empty</p>`;
+            const details = [
+                slot.lastPlayed ? `Last played ${HerbaryoSchema.formatDate(slot.lastPlayed)}` : '',
+                slot.version ? `Version ${esc(slot.version)}` : ''
+            ].filter(Boolean).join(' · ');
+            return `
+                <div class="view-slot">
+                    <div class="view-slot-head"><strong>Slot ${number}</strong><span>${details}</span></div>
+                    <div class="view-stats-grid view-slot-stats">
+                        ${stat('Chapter', slot.chapter)}
+                        ${stat('Day', slot.day)}
+                        ${stat('Aurels', slot.aurels, HerbaryoSchema.aurelIcon)}
+                        ${stat('Aetherion', slot.aetherion, HerbaryoSchema.aetherionIcon)}
+                        ${stat('Reputation', slot.reputation, HerbaryoSchema.reputationIcon)}
+                        ${stat('Play time', viewPlayTime(slot.playMinutes))}
+                    </div>
+                </div>`;
+        }).join('');
+    }
+
+    function viewTrialsHtml(attempts) {
+        const esc = HerbaryoSchema.escapeHtml;
+        const score = attempt => `${esc(attempt.score)}/${esc(attempt.total)}`;
+        const lines = Object.keys(HerbaryoSchema.trialPaths).map(key => {
+            const own = Object.values(attempts || {}).filter(attempt => attempt.category === key)
+                .sort((a, b) => a.takenAt - b.takenAt);
+            if (!own.length) return '';
+            return `<p class="view-note"><strong>${esc(HerbaryoSchema.trialPaths[key])}</strong> · First ${score(own[0])} · Latest ${score(own[own.length - 1])}</p>`;
+        }).filter(Boolean);
+        return lines.join('') || '<p class="view-note">No Trials yet.</p>';
     }
 
     function showEditModal(uid, userData) {
@@ -393,7 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span>Account Type</span>
                         <select id="editAccountType">
                             <option value="free">Free</option>
-                            <option value="premium">Premium</option>
+                            <option value="premium">Full Game</option>
                         </select>
                     </label>
                     <div class="edit-actions">
@@ -464,6 +552,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateStats(users) {
         const totalUsersEl = document.getElementById('totalUsers');
         if (totalUsersEl) totalUsersEl.textContent = users.length;
+
+        const splitEl = document.getElementById('totalUsersSplit');
+        if (splitEl) {
+            const fullGame = users.filter(user => user.account_type === 'premium').length;
+            splitEl.textContent = `${fullGame} Full Game · ${users.length - fullGame} Free`;
+        }
     }
 
     // ---- The three tabs: Players, Reports, News
@@ -481,6 +575,114 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById(other.dataset.adminTab).hidden = !isActive;
             });
         });
+    }
+
+    // ---- The Apprentice's Trial: each player's first and latest score per path, for the capstone
+    let allTrials = {};
+    let trialRows = [];
+
+    // Average of the first or latest attempts. Falls back to percent while question counts differ.
+    function trialAverage(rows, pick) {
+        const picked = rows.map(row => pick(row.own));
+        const totals = new Set(picked.map(attempt => Number(attempt.total)));
+        const mean = values => values.reduce((sum, value) => sum + value, 0) / values.length;
+        if (totals.size === 1) return `${mean(picked.map(attempt => Number(attempt.score))).toFixed(1)}/${[...totals][0]}`;
+        return `${mean(picked.map(attempt => Number(attempt.score) / (Number(attempt.total) || 1) * 100)).toFixed(0)}%`;
+    }
+
+    // A spreadsheet must never run a name as a formula.
+    function csvCell(value) {
+        const text = String(value ?? '');
+        return `"${(/^[=+\-@\t\r]/.test(text) ? `'${text}` : text).replace(/"/g, '""')}"`;
+    }
+
+    function csvDate(milliseconds) {
+        const date = new Date(Number(milliseconds));
+        if (Number.isNaN(date.getTime())) return '';
+        const two = number => String(number).padStart(2, '0');
+        return `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}`;
+    }
+
+    // Score and "out of" are separate columns: a spreadsheet would turn "6/15" into June 15.
+    function trialCsv(rows, pathNames) {
+        const header = ['Player', 'Path', 'First Score', 'First Out Of', 'First Date', 'Latest Score', 'Latest Out Of', 'Latest Date', 'Attempts'];
+        const lines = rows.map(row => {
+            const first = row.own[0];
+            const latest = row.own[row.own.length - 1];
+            return [row.name, pathNames[row.key], first.score, first.total, csvDate(first.takenAt),
+                latest.score, latest.total, csvDate(latest.takenAt), row.own.length].map(csvCell).join(',');
+        });
+        return [header.map(csvCell).join(',')].concat(lines).join('\r\n');
+    }
+
+    function downloadTrials() {
+        if (!trialRows.length) return;
+        const blob = new Blob(['\ufeff' + trialCsv(trialRows, HerbaryoSchema.trialPaths)], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `herbaryo-trial-results-${csvDate(Date.now())}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function loadTrialsAdmin() {
+        document.getElementById('trialPathFilter').addEventListener('change', renderTrials);
+        document.getElementById('trialDownloadBtn').addEventListener('click', downloadTrials);
+        db.ref('trial-attempts').on('value', snapshot => {
+            allTrials = snapshot.val() || {};
+            renderTrials();
+        }, error => {
+            console.error('Failed to load Trials:', error);
+            document.getElementById('adminTrialsList').innerHTML = '<p class="admin-note">Trials could not be loaded.</p>';
+        });
+    }
+
+    function renderTrials() {
+        const esc = HerbaryoSchema.escapeHtml;
+        const filter = document.getElementById('trialPathFilter').value;
+        const rows = [];
+        Object.entries(allTrials).forEach(([uid, attempts]) => {
+            const player = allUsers.find(user => user.uid === uid);
+            Object.keys(HerbaryoSchema.trialPaths).filter(key => !filter || key === filter).forEach(key => {
+                const own = Object.values(attempts || {}).filter(attempt => attempt.category === key)
+                    .sort((a, b) => a.takenAt - b.takenAt);
+                if (own.length) rows.push({ name: player ? player.username : 'Unknown', key, own });
+            });
+        });
+        rows.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+        trialRows = rows;
+        document.getElementById('trialDownloadBtn').disabled = !rows.length;
+
+        document.getElementById('adminTrialSummary').innerHTML = Object.keys(HerbaryoSchema.trialPaths).map(key => {
+            const ofPath = rows.filter(row => row.key === key);
+            if (!ofPath.length) return '';
+            return `
+                <article class="admin-card">
+                    <div class="admin-card-head">
+                        <strong>${esc(HerbaryoSchema.trialPaths[key])}</strong>
+                        <span>${ofPath.length} player${ofPath.length === 1 ? '' : 's'}</span>
+                        <span>First average ${esc(trialAverage(ofPath, own => own[0]))}</span>
+                        <span>Latest average ${esc(trialAverage(ofPath, own => own[own.length - 1]))}</span>
+                    </div>
+                </article>`;
+        }).join('');
+
+        const line = attempt => `${esc(attempt.score)}/${esc(attempt.total)} · ${HerbaryoSchema.formatDate(attempt.takenAt)} · ${esc(HerbaryoSchema.trialMoment(attempt))}`;
+        document.getElementById('adminTrialsList').innerHTML = rows.length
+            ? rows.map(row => `
+                <article class="admin-card">
+                    <div class="admin-card-head">
+                        <strong>${esc(row.name)}</strong>
+                        <span>${esc(HerbaryoSchema.trialPaths[row.key])}</span>
+                        <span>${row.own.length} attempt${row.own.length === 1 ? '' : 's'}</span>
+                    </div>
+                    <p class="admin-card-text">First: ${line(row.own[0])}</p>
+                    <p class="admin-card-text">Latest: ${line(row.own[row.own.length - 1])}</p>
+                </article>`).join('')
+            : '<p class="admin-note">No Trials yet.</p>';
     }
 
     // ---- Reports

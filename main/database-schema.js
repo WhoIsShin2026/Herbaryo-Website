@@ -189,6 +189,9 @@
         const updates = {
             [`progress/${uid}`]: null,
             [`achievement-dates/${uid}`]: null,
+            [`trial-attempts/${uid}`]: null,
+            [`trial-last/${uid}`]: null,
+            [`trial-seen/${uid}`]: null,
             [`herbaryo-users/${uid}`]: null
         };
         if (isOwner) updates[`report-times/${uid}`] = null;
@@ -211,6 +214,12 @@
         if (Object.keys(updates).length) await db.ref('reports').update(updates);
     }
 
+    const trialPaths = { forager: 'The Forager', apothecary: 'The Apothecary', instructor: 'The Instructor' };
+
+    function trialMoment(attempt) {
+        return Number(attempt.chapter) > 0 ? `Chapter ${attempt.chapter}, Day ${attempt.day}` : 'Before playing';
+    }
+
     function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>"']/g, character => ({
             '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -224,8 +233,25 @@
             : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
 
+    function achievementIcon(key) {
+        return `../img/achievements/${key}.webp`;
+    }
+    const achievementLockIcon = '../img/achievements/lock.webp';
+    const fullGameIcon = '../img/achievements/full-game.webp';
+    const aurelIcon = '../img/achievements/aurel.webp';
+    const aetherionIcon = '../img/achievements/aetherion.webp';
+    const reputationIcon = '../img/achievements/reputation.webp';
+
     window.HerbaryoSchema = {
         achievementCatalog,
+        trialPaths,
+        trialMoment,
+        achievementIcon,
+        achievementLockIcon,
+        fullGameIcon,
+        aurelIcon,
+        aetherionIcon,
+        reputationIcon,
         generalAchievementKeys,
         avatarPaths,
         defaultAvatarPath,

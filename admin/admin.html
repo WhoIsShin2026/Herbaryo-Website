@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="./admin.css">
+    <link rel="stylesheet" href="./admin.css?v=5">
     <link rel="stylesheet" href="../main/motion.css">
 </head>
 
@@ -50,6 +50,8 @@
                     hidden>0</span></button>
             <button class="admin-tab" type="button" role="tab" aria-selected="false"
                 data-admin-tab="adminNewsPanel">News</button>
+            <button class="admin-tab" type="button" role="tab" aria-selected="false"
+                data-admin-tab="adminTrialsPanel">Trials</button>
         </div>
 
         <div class="admin-panel" id="adminPlayersPanel">
@@ -59,14 +61,22 @@
                 <div class="stat-card">
                     <div class="stat-number" id="totalUsers">0</div>
                     <div class="stat-label">Registered</div>
+                    <div class="stat-label" id="totalUsersSplit">0 Full Game · 0 Free</div>
                 </div>
             </div>
         </section>
 
         <section class="users-section">
             <h2>Manage Players</h2>
-            <div class="search-section">
+            <div class="search-section admin-filters player-tools">
                 <input type="text" id="searchInput" placeholder="🔍 Search players by name or email...">
+                <label class="field-group">Show
+                    <select id="playerTypeFilter">
+                        <option value="">All</option>
+                        <option value="premium">Full Game</option>
+                        <option value="free">Free</option>
+                    </select>
+                </label>
             </div>
             <div class="table-container">
                 <table id="usersTable">
@@ -110,6 +120,27 @@
                 </div>
                 <div class="admin-card-list" id="adminReportsList">
                     <p class="admin-note">Loading reports...</p>
+                </div>
+            </section>
+        </div>
+
+        <div class="admin-panel" id="adminTrialsPanel" hidden>
+            <section class="users-section">
+                <h2>The Apprentice's Trial</h2>
+                <div class="admin-filters">
+                    <label class="field-group">Path
+                        <select id="trialPathFilter">
+                            <option value="">All</option>
+                            <option value="forager">The Forager</option>
+                            <option value="apothecary">The Apothecary</option>
+                            <option value="instructor">The Instructor</option>
+                        </select>
+                    </label>
+                    <button class="admin-status-btn trial-download-btn" id="trialDownloadBtn" type="button" disabled>Download Results</button>
+                </div>
+                <div class="admin-card-list trial-summary" id="adminTrialSummary"></div>
+                <div class="admin-card-list" id="adminTrialsList">
+                    <p class="admin-note">Loading Trials...</p>
                 </div>
             </section>
         </div>
@@ -159,7 +190,7 @@
 
     <footer class="footer">
         <div class="container">
-            <p>© 2026 Herbaryo - Thesis Game by Real's Group. Preserving Philippine herbal knowledge through
+            <p>© 2026 Herbaryo - A Capstone Project by Real's Group. Preserving Philippine herbal knowledge through
                 gamification.</p>
         </div>
     </footer>
@@ -168,7 +199,7 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
     <script defer src="../main/database-schema.js"></script>
-    <script defer src="./admin.js"></script>
+    <script defer src="./admin.js?v=6"></script>
 </body>
 
 </html>

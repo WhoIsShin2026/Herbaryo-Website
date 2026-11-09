@@ -34,8 +34,9 @@ function updateUserUI(userData) {
     document.getElementById('usernameValue').textContent = displayName;
     document.getElementById('userEmail').textContent = userData.email || auth.currentUser?.email || '-';
     document.getElementById('accountTypeValue').textContent =
-        userData.account_type === 'premium' ? 'Premium' : 'Free';
+        userData.account_type === 'premium' ? 'Full Game' : 'Free';
 
+    document.getElementById('heroFullBadge').hidden = userData.account_type !== 'premium';
     avatar.textContent = getInitials(displayName);
     avatar.style.backgroundImage = `url("${HerbaryoSchema.normalizeAvatar(userData.photoURL)}")`;
     avatar.style.setProperty('--profile-color', HerbaryoSchema.normalizeColor(userData.color));
@@ -62,8 +63,14 @@ function renderAchievements(achievementData = {}) {
         <button class="achievement-card ${achievement.unlocked ? 'unlocked' : 'locked'}"
             type="button" data-achievement-key="${achievement.key}"
             aria-label="View ${achievement.title} achievement details">
-            <strong>${achievement.title}</strong>
-            <span>${achievement.unlocked ? unlockedText(achievement.key) : achievement.description}</span>
+            <span class="achievement-icon">
+                <img src="${HerbaryoSchema.achievementIcon(achievement.key)}" alt="" width="160" height="160" loading="lazy">
+                ${achievement.unlocked ? '' : `<img class="achievement-lock" src="${HerbaryoSchema.achievementLockIcon}" alt="">`}
+            </span>
+            <span class="achievement-text">
+                <strong>${achievement.title}</strong>
+                <span>${achievement.unlocked ? unlockedText(achievement.key) : achievement.description}</span>
+            </span>
         </button>
     `).join('');
 }
@@ -81,6 +88,7 @@ document.getElementById('achievementList').addEventListener('click', event => {
         return;
     }
 
+    document.getElementById('achievementDialogIcon').src = HerbaryoSchema.achievementIcon(achievement[0]);
     document.getElementById('achievementDialogTitle').textContent = achievement[1];
     document.getElementById('achievementDialogDescription').textContent =
         currentAchievements[achievement[0]] === true
@@ -316,7 +324,7 @@ function openMiniProfile(focusSelector = '#openEditProfileBtn') {
     );
     const isPremium = currentUserData.account_type === 'premium';
     const planBadge = document.getElementById('profilePlan');
-    planBadge.textContent = isPremium ? 'Premium' : 'Free';
+    planBadge.textContent = isPremium ? 'Full Game' : 'Free';
     planBadge.classList.toggle('premium', isPremium);
     document.getElementById('openChangePasswordBtn').hidden = !hasPasswordProvider;
     googlePasswordNote.hidden = hasPasswordProvider;
@@ -576,6 +584,16 @@ function watchPlayerData(uid) {
             '<p class="panel-note">Your progress could not be loaded right now.</p>';
     });
 
+    db.ref(`trial-attempts/${uid}`).on('value', snapshot => {
+        if (deletingAccount) return;
+        const attempts = [];
+        snapshot.forEach(child => { attempts.push(child.val()); });
+        renderTrials(attempts.reverse());
+    }, error => {
+        console.error('Failed to load Trials:', error);
+        document.getElementById('myTrials').innerHTML = '<p class="panel-note">Your Trials could not be loaded right now.</p>';
+    });
+
     db.ref(`achievement-dates/${uid}`).on('value', snapshot => {
         if (deletingAccount) return;
         achievementDates = snapshot.val() || {};
@@ -600,8 +618,8 @@ function playTimeText(minutes) {
 }
 
 function renderProgress(slots) {
-    const stat = (label, value) => `
-        <div class="stat-card"><span>${label}</span><strong>${HerbaryoSchema.escapeHtml(value)}</strong></div>`;
+    const stat = (label, value, icon) => `
+        <div class="stat-card"><span>${icon ? `<img src="${icon}" alt="" width="96" height="96">` : ''}${label}</span><strong>${HerbaryoSchema.escapeHtml(value)}</strong></div>`;
 
     document.getElementById('progressContent').innerHTML = [1, 2, 3].map(number => {
         const slot = slots[`slot${number}`];
@@ -618,8 +636,9 @@ function renderProgress(slots) {
                 <div class="save-stats">
                     ${stat('Chapter', slot.chapter)}
                     ${stat('Day', slot.day)}
-                    ${stat('Aurels', slot.aurels)}
-                    ${stat('Reputation', slot.reputation)}
+                    ${stat('Aurels', slot.aurels, HerbaryoSchema.aurelIcon)}
+                    ${stat('Aetherion', slot.aetherion ?? 0, HerbaryoSchema.aetherionIcon)}
+                    ${stat('Reputation', slot.reputation, HerbaryoSchema.reputationIcon)}
                     ${stat('Play time', playTimeText(slot.playMinutes))}
                 </div>
             </article>`;
@@ -834,3 +853,34 @@ document.getElementById('resendVerifyBtn').addEventListener('click', async event
         button.disabled = false;
     }
 });
+
+// ---- The Apprentice's Trial: every attempt taken in the game
+function renderTrials(attempts) {
+    const esc = HerbaryoSchema.escapeHtml;
+    document.getElementById('trialBest').innerHTML = Object.entries(HerbaryoSchema.trialPaths).map(([key, name]) => {
+        const own = attempts.filter(attempt => attempt.category === key);
+        const best = own.reduce((top, attempt) => (!top || attempt.score > top.score ? attempt : top), null);
+        const perfect = best && best.score >= best.total;
+        return `
+            <div class="stat-card trial-best">
+                <span>${name}</span>
+                <strong>${best ? `${esc(best.score)}/${esc(best.total)}` : '--'}</strong>
+                ${perfect ? `<em class="trial-perfect"><img src="${HerbaryoSchema.fullGameIcon}" alt="" width="128" height="128">Perfect</em>` : ''}
+            </div>`;
+    }).join('');
+
+    const list = document.getElementById('myTrials');
+    if (!attempts.length) {
+        list.innerHTML = '<p class="panel-note">You have not taken the Trial yet. Open the game and tap Trial on the Main Menu.</p>';
+        return;
+    }
+    list.innerHTML = attempts.map(attempt => `
+        <article class="report-card">
+            <div class="report-card-head">
+                <strong>${esc(HerbaryoSchema.trialPaths[attempt.category] || attempt.category)}</strong>
+                <span>${HerbaryoSchema.formatDate(attempt.takenAt)}</span>
+                <span>${esc(HerbaryoSchema.trialMoment(attempt))}</span>
+                <span class="report-status ${attempt.score >= attempt.total ? 'fixed' : ''}">${esc(attempt.score)}/${esc(attempt.total)}</span>
+            </div>
+        </article>`).join('');
+}
