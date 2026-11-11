@@ -1243,6 +1243,11 @@ tbody tr:last-child td {
     display: none;
 }
 
+.trial-questions-title {
+    margin: 2rem 0 .25rem;
+    color: var(--walnut);
+}
+
 .admin-form {
     display: grid;
     gap: 1rem;

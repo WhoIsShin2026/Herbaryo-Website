@@ -140,6 +140,7 @@ document.getElementById('buyNow').addEventListener('click', async event => {
             return;
         }
         if (result.error === 'verify') show('stepVerify');
+        else if (result.error === 'unavailable') say('The store is not open yet. Please try again later.');
         else say('Unable to start the payment right now. Please try again.');
     } catch (error) {
         console.error('Failed to start the payment:', error);

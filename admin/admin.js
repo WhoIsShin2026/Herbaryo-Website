@@ -29,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         db.ref(`admins/${user.uid}`).get().then(snapshot => {
             if (snapshot.val() === true) {
-                console.log('Admin verified ✅');
                 initAdminUI(user);
                 loadUsers();
                 initAdminTabs();
@@ -37,7 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadNewsAdmin();
                 loadTrialsAdmin();
             } else {
-                console.log('Not admin ❌');
                 showAdminAccessStatus(
                     `No admin role found for this account. In Realtime Database, set /admins/${user.uid} to the boolean true.`
                 );
@@ -628,8 +626,49 @@ document.addEventListener('DOMContentLoaded', () => {
         window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
+    // ---- The Trial's questions: % right per question (trial-stats/questions, counted by the game by id)
+    let questionStats = {};
+
+    function renderTrialQuestions() {
+        const esc = HerbaryoSchema.escapeHtml;
+        const bank = window.HerbaryoTrialQuestions || {};
+        const filter = document.getElementById('trialPathFilter').value;
+        const rows = [];
+        Object.keys(HerbaryoSchema.trialPaths).filter(key => !filter || key === filter).forEach(key => {
+            (bank[key] || []).forEach(question => {
+                const stat = questionStats[question.id] || {};
+                const asked = Number(stat.asked) || 0;
+                const right = Number(stat.right) || 0;
+                rows.push({ key, question, asked, percent: asked > 0 ? Math.round(right / asked * 100) : null });
+            });
+        });
+        // Lowest first; not answered yet at the end.
+        rows.sort((a, b) => (a.percent === null) - (b.percent === null) || (a.percent ?? 0) - (b.percent ?? 0) || a.question.id.localeCompare(b.question.id));
+        document.getElementById('adminTrialQuestions').innerHTML = rows.length
+            ? rows.map(row => `
+                <article class="admin-card">
+                    <div class="admin-card-head">
+                        <strong>${row.percent === null ? 'Not answered yet' : `${row.percent}% right`}</strong>
+                        <span>${esc(row.question.id)}</span>
+                        <span>${esc(HerbaryoSchema.trialPaths[row.key])}</span>
+                        <span>${row.asked} player${row.asked === 1 ? '' : 's'}</span>
+                    </div>
+                    <p class="admin-card-text">${esc(row.question.text)}</p>
+                    <p class="admin-card-info">Answer: ${esc(row.question.answer)}</p>
+                </article>`).join('')
+            : '<p class="admin-note">No questions.</p>';
+    }
+
     function loadTrialsAdmin() {
         document.getElementById('trialPathFilter').addEventListener('change', renderTrials);
+        document.getElementById('trialPathFilter').addEventListener('change', renderTrialQuestions);
+        db.ref('trial-stats/questions').on('value', snapshot => {
+            questionStats = snapshot.val() || {};
+            renderTrialQuestions();
+        }, error => {
+            console.error('Failed to load Trial questions:', error);
+            document.getElementById('adminTrialQuestions').innerHTML = '<p class="admin-note">Questions could not be loaded.</p>';
+        });
         document.getElementById('trialDownloadBtn').addEventListener('click', downloadTrials);
         db.ref('trial-attempts').on('value', snapshot => {
             allTrials = snapshot.val() || {};

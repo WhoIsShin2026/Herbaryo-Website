@@ -1,5 +1,5 @@
 // Starts a payment for the signed-in player. The server decides who is paying and how much: nothing the browser sends can change either.
-// PAYMENT_MODE = "paymongo" uses PayMongo; anything else (the default) uses the Simulated Checkout page.
+// Always PayMongo (the Simulated Checkout was removed 2026-11-11). Without its key set in Netlify, Buy says the store is unavailable.
 const { PRICE_CENTAVOS, checkBuyer } = require('../lib/purchase');
 
 function reply(statusCode, body) {
@@ -11,7 +11,10 @@ exports.handler = async event => {
 
     const buyer = await checkBuyer(event);
     if (buyer.error) return reply(buyer.status, { error: buyer.error });
-    if (process.env.PAYMENT_MODE !== 'paymongo') return reply(200, { url: '/buy/checkout.html' });
+    if (!process.env.PAYMONGO_SECRET_KEY) {
+        console.error('PAYMONGO_SECRET_KEY is not set in Netlify.');
+        return reply(503, { error: 'unavailable' });
+    }
 
     const site = process.env.URL;
     const response = await fetch('https://api.paymongo.com/v1/checkout_sessions', {
