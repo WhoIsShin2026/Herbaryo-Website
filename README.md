@@ -1,3 +1,3 @@
 # Herbaryo Website Link
 
-https://herbaryo.netlify.app
+https://ourherbaryo.netlify.app
