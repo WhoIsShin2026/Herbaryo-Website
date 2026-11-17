@@ -423,6 +423,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return `
                 <div class="view-slot">
                     <div class="view-slot-head"><strong>Slot ${number}</strong><span>${details}</span></div>
+                    ${(t => t ? `<div class="save-title"><img src="${t.icon}" alt="" width="128" height="128"><span>${esc(t.name)}</span></div>` : '')(HerbaryoSchema.titleOf(slot.titleKey))}
                     <div class="view-stats-grid view-slot-stats">
                         ${stat('Chapter', slot.chapter)}
                         ${stat('Day', slot.day)}

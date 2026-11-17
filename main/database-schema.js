@@ -216,6 +216,24 @@
 
     const trialPaths = { forager: 'The Forager', apothecary: 'The Apothecary', instructor: 'The Instructor' };
 
+    // The title a save's player wears, sent by the game as a fixed key (never the words - a renamed title only changes here).
+    const titleCatalog = {
+        apprentice: { name: 'Herbal Apprentice', icon: '../img/titles/apprentice.webp' },
+        forager_1: { name: 'Novice Forager', icon: '../img/titles/forager_1.webp' },
+        forager_2: { name: 'Field Forager', icon: '../img/titles/forager_2.webp' },
+        forager_3: { name: 'Seasoned Forager', icon: '../img/titles/forager_3.webp' },
+        forager_4: { name: 'Master Forager', icon: '../img/titles/forager_4.webp' },
+        apothecary_1: { name: 'Novice Apothecary', icon: '../img/titles/apothecary_1.webp' },
+        apothecary_2: { name: 'Apprentice Apothecary', icon: '../img/titles/apothecary_2.webp' },
+        apothecary_3: { name: 'Skilled Apothecary', icon: '../img/titles/apothecary_3.webp' },
+        apothecary_4: { name: 'Master Apothecary', icon: '../img/titles/apothecary_4.webp' },
+        instructor_1: { name: 'Novice Instructor', icon: '../img/titles/instructor_1.webp' },
+        instructor_2: { name: 'Trusted Instructor', icon: '../img/titles/instructor_2.webp' },
+        instructor_3: { name: 'Respected Instructor', icon: '../img/titles/instructor_3.webp' },
+        instructor_4: { name: 'Master Instructor', icon: '../img/titles/instructor_4.webp' }
+    };
+    function titleOf(key) { return Object.prototype.hasOwnProperty.call(titleCatalog, key) ? titleCatalog[key] : null; }
+
     function trialMoment(attempt) {
         return Number(attempt.chapter) > 0 ? `Chapter ${attempt.chapter}, Day ${attempt.day}` : 'Before playing';
     }
@@ -245,6 +263,8 @@
     window.HerbaryoSchema = {
         achievementCatalog,
         trialPaths,
+        titleCatalog,
+        titleOf,
         trialMoment,
         achievementIcon,
         achievementLockIcon,

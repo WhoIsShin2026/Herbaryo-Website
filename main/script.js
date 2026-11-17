@@ -347,6 +347,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const linkedDialog = document.getElementById(window.location.hash.slice(1));
     if (linkedDialog instanceof HTMLDialogElement && linkedDialog.classList.contains('legal-dialog')) linkedDialog.showModal();
 
+    // The trailer: YouTube in a pop-up (privacy-enhanced player), loaded only when opened; closing it stops the video.
+    const trailerButton = document.getElementById('trailerButton');
+    const trailerDialog = document.getElementById('trailerDialog');
+    if (trailerButton && trailerDialog instanceof HTMLDialogElement) {
+        const holder = trailerDialog.querySelector('.trailer-video');
+        trailerButton.addEventListener('click', () => {
+            const id = trailerButton.dataset.trailer;
+            holder.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&modestbranding=1&playsinline=1"
+                title="Herbaryo trailer" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
+            if (!trailerDialog.open) trailerDialog.showModal();
+        });
+        trailerDialog.querySelector('[data-close-trailer]')?.addEventListener('click', () => trailerDialog.close());
+        trailerDialog.addEventListener('click', event => { if (event.target === trailerDialog) trailerDialog.close(); });
+        trailerDialog.addEventListener('close', () => { holder.innerHTML = ''; });   // stops the sound
+    }
+
     legalDialogs.forEach(dialog => {
         dialog.querySelector('[data-close-legal]')?.addEventListener('click', () => dialog.close());
         dialog.addEventListener('click', event => {

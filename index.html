@@ -62,7 +62,7 @@
                             <a class="btn-primary hero-download-btn" href="#download">
                                 Download Game
                             </a>
-                            <button class="btn-secondary" type="button">Watch Trailer</button>
+                            <button class="btn-secondary" type="button" id="trailerButton" data-trailer="hf3Y4eBjO9c">Watch Trailer</button>
                         </div>
                     </div>
                 </div>
@@ -433,6 +433,18 @@
             </ul>
         </article>
     </dialog>
+    <dialog class="trailer-dialog" id="trailerDialog" aria-label="Herbaryo trailer">
+        <div class="trailer-frame">
+            <button class="policy-back-button trailer-close" type="button" data-close-trailer
+                aria-label="Close the trailer" title="Close">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+            </button>
+            <div class="trailer-video"></div>
+        </div>
+    </dialog>
+
     <dialog class="legal-dialog" id="termsDialog" aria-labelledby="termsTitle">
         <article class="policy-document">
             <div class="policy-actions">

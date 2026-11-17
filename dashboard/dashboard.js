@@ -617,6 +617,13 @@ function playTimeText(minutes) {
     return `${Math.floor(total / 60)}h ${total % 60}m`;
 }
 
+// The title the player wears in that save (sent by the game since 11-17; older saves show none until saved again).
+function titleRow(key) {
+    const title = HerbaryoSchema.titleOf(key);
+    if (!title) return '';
+    return `<div class="save-title"><img src="${title.icon}" alt="" width="128" height="128"><span>${HerbaryoSchema.escapeHtml(title.name)}</span></div>`;
+}
+
 function renderProgress(slots) {
     const stat = (label, value, icon) => `
         <div class="stat-card"><span>${icon ? `<img src="${icon}" alt="" width="96" height="96">` : ''}${label}</span><strong>${HerbaryoSchema.escapeHtml(value)}</strong></div>`;
@@ -633,6 +640,7 @@ function renderProgress(slots) {
         return `
             <article class="progress-slot">
                 <div class="progress-slot-head"><h3>Slot ${number}</h3><span>${details}</span></div>
+                ${titleRow(slot.titleKey)}
                 <div class="save-stats">
                     ${stat('Chapter', slot.chapter)}
                     ${stat('Day', slot.day)}

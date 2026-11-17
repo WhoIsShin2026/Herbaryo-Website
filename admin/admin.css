@@ -1506,3 +1506,18 @@ tbody tr:last-child td {
 .player-admin-badge:focus::after {
     display: block;
 }
+
+.save-title {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    margin: .2rem 0 .6rem;
+    font-weight: 700;
+    color: var(--walnut, #5a3a26);
+}
+
+.save-title img {
+    width: 2.4rem;
+    height: 2.4rem;
+    flex: 0 0 auto;
+}

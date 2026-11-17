@@ -1190,6 +1190,21 @@ main.container {
     display: none;
 }
 
+.save-title {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    margin: 0 0 .7rem;
+    font-weight: 700;
+    color: var(--walnut, #5a3a26);
+}
+
+.save-title img {
+    width: 2.6rem;
+    height: 2.6rem;
+    flex: 0 0 auto;
+}
+
 .progress-slot-head {
     display: flex;
     flex-wrap: wrap;
