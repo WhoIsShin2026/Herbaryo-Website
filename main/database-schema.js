@@ -192,6 +192,8 @@
             [`trial-attempts/${uid}`]: null,
             [`trial-last/${uid}`]: null,
             [`trial-seen/${uid}`]: null,
+            [`sessions/${uid}`]: null,
+            [`cloud-saves/${uid}`]: null,
             [`herbaryo-users/${uid}`]: null
         };
         if (isOwner) updates[`report-times/${uid}`] = null;

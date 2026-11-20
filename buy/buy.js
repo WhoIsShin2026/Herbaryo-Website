@@ -1,12 +1,4 @@
-firebase.initializeApp({
-    apiKey: "AIzaSyCGhmcMfla7-mfYwzxcy1XxZ-24vZqVSS0",
-    authDomain: "login-4baca.firebaseapp.com",
-    databaseURL: "https://login-4baca-default-rtdb.asia-southeast1.firebasedatabase.app/",
-    projectId: "login-4baca",
-    storageBucket: "login-4baca.firebasestorage.app",
-    messagingSenderId: "874293361860",
-    appId: "1:874293361860:web:65808ac513134660fcdd91"
-});
+firebase.initializeApp(window.HerbaryoFirebaseConfig);   // main/firebase-config.js
 const auth = firebase.auth();
 const db = firebase.database();
 

@@ -16,7 +16,7 @@
             {
                 "id": "f03",
                 "text": "Who verifies the plants you have assessed?",
-                "answer": "Chris, the researcher"
+                "answer": "Chris, Lolo's assistant"
             },
             {
                 "id": "f04",

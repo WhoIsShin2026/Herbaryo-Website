@@ -1,16 +1,16 @@
 // The server's Firebase access. The private key lives only in Netlify's environment variables, never in the code.
 const admin = require('firebase-admin');
 
-const DATABASE_URL = 'https://login-4baca-default-rtdb.asia-southeast1.firebasedatabase.app';
+const config = require('../../main/firebase-config.js');   // the one place that names the project
 
 if (!admin.apps.length) {
     admin.initializeApp({
         credential: admin.credential.cert({
-            projectId: 'login-4baca',
+            projectId: config.projectId,
             clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
             privateKey: String(process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n')
         }),
-        databaseURL: DATABASE_URL
+        databaseURL: config.databaseURL.replace(/\/$/, '')
     });
 }
 
