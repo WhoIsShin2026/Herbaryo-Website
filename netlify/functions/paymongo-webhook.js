@@ -40,7 +40,8 @@ exports.handler = async event => {
         return reply(200, { received: true });
     }
 
-    await grantFullGame(uid, session.id, { livemode: attributes.livemode === true });
+    const source = paid.attributes.source || {};
+    await grantFullGame(uid, session.id, { livemode: attributes.livemode === true, method: String(source.type || '').slice(0, 20) });   // (the Admin Sales table shows the method)
     return reply(200, { received: true });
 };
 

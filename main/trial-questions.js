@@ -14,11 +14,6 @@
                 "answer": "The senses: color, odor, texture and taste"
             },
             {
-                "id": "f03",
-                "text": "Who verifies the plants you have assessed?",
-                "answer": "Chris, Lolo's assistant"
-            },
-            {
                 "id": "f04",
                 "text": "Ulasimang Bato is also known as what?",
                 "answer": "Pansit-pansitan"
@@ -54,21 +49,6 @@
                 "answer": "Bayabas"
             },
             {
-                "id": "f11",
-                "text": "How many Morphological answers must be right to pass?",
-                "answer": "At least 5 of 6"
-            },
-            {
-                "id": "f12",
-                "text": "When can you do a plant's Organoleptic Characterization?",
-                "answer": "After Chris verifies the plant"
-            },
-            {
-                "id": "f13",
-                "text": "What does the Sickle do to a plant?",
-                "answer": "Cuts it down - nothing goes in your bag"
-            },
-            {
                 "id": "f14",
                 "text": "Which tool do you use to harvest Garlic?",
                 "answer": "A trowel"
@@ -77,6 +57,26 @@
                 "id": "f15",
                 "text": "Balatong-aso is poisonous, especially in which parts?",
                 "answer": "Its pods and seeds"
+            },
+            {
+                "id": "f17",
+                "text": "Which plant is a climbing vine with tendrils and leaves cut into 5 to 7 lobes?",
+                "answer": "Ampalaya"
+            },
+            {
+                "id": "f18",
+                "text": "What is the scientific name of Lagundi?",
+                "answer": "Vitex negundo"
+            },
+            {
+                "id": "f20",
+                "text": "Which plant grows as a bulb made of cloves?",
+                "answer": "Garlic"
+            },
+            {
+                "id": "f21",
+                "text": "Which plant has 16 to 28 large leaflets and upright, candle-like flower spikes?",
+                "answer": "Akapulko"
             }
         ],
         "apothecary": [
@@ -89,26 +89,6 @@
                 "id": "a02",
                 "text": "What is a decoction?",
                 "answer": "A remedy made by boiling a plant part in water"
-            },
-            {
-                "id": "a03",
-                "text": "What does the Mesh Cloth do?",
-                "answer": "It strains the liquid from the plant pieces"
-            },
-            {
-                "id": "a04",
-                "text": "Which tool do you use to pound or grind a plant?",
-                "answer": "A mortar and pestle"
-            },
-            {
-                "id": "a05",
-                "text": "Where is a finished remedy sealed in its jar?",
-                "answer": "At the Packaging station"
-            },
-            {
-                "id": "a06",
-                "text": "Where do you pick the part you need, like leaves or cloves?",
-                "answer": "At the Separation station"
             },
             {
                 "id": "a07",
@@ -141,27 +121,42 @@
                 "answer": "Let it cool completely"
             },
             {
-                "id": "a13",
-                "text": "1 cup (or 1 glass) equals how many tablespoons?",
-                "answer": "16 tablespoons"
+                "id": "a16",
+                "text": "Which part of Ampalaya is boiled for diabetes?",
+                "answer": "The sprouts"
             },
             {
-                "id": "a14",
-                "text": "What happens to an Old remedy at Lolo's review?",
-                "answer": "It fails the review"
+                "id": "a17",
+                "text": "How are Tsaang Gubat leaves prepared before boiling?",
+                "answer": "Chopped with a knife"
             },
             {
-                "id": "a15",
-                "text": "At the Separation station, what do you do to each Garlic clove?",
-                "answer": "Peel off its skin"
+                "id": "a18",
+                "text": "How long can a decoction be kept?",
+                "answer": "Use it within the day it is made"
+            },
+            {
+                "id": "a19",
+                "text": "Which part of Bayabas (guava) is boiled to wash wounds?",
+                "answer": "The leafy tops"
+            },
+            {
+                "id": "a20",
+                "text": "Which plant's leaves are ground and squeezed into an extract for ringworm?",
+                "answer": "Akapulko"
+            },
+            {
+                "id": "a21",
+                "text": "How much water is used to boil Tsaang Gubat leaves?",
+                "answer": "1 glass, until reduced to half"
+            },
+            {
+                "id": "a22",
+                "text": "Which part of Niyog-niyogan is used for intestinal worms?",
+                "answer": "The seeds from its withered fruit"
             }
         ],
         "instructor": [
-            {
-                "id": "i01",
-                "text": "Lagundi is commonly used for what?",
-                "answer": "Cough and asthma"
-            },
             {
                 "id": "i02",
                 "text": "Boiled Sambong leaves help with what?",
@@ -176,11 +171,6 @@
                 "id": "i04",
                 "text": "Ulasimang Bato helps lower what, for gout?",
                 "answer": "Uric acid"
-            },
-            {
-                "id": "i05",
-                "text": "Who reviews your remedy before it reaches the patient?",
-                "answer": "Lolo"
             },
             {
                 "id": "i06",
@@ -231,6 +221,16 @@
                 "id": "i15",
                 "text": "A patient is allergic to Akapulko extract. What do they use instead?",
                 "answer": "The boiled Akapulko leaves"
+            },
+            {
+                "id": "i16",
+                "text": "Boiled Bayabas leafy tops are used to wash what?",
+                "answer": "Wounds and scabies"
+            },
+            {
+                "id": "i17",
+                "text": "Lagundi is used for what?",
+                "answer": "Cough"
             }
         ]
     };

@@ -14,7 +14,9 @@
         ['master_herbalist', 'Master Herbalist', 'Master all 10 herbs'],
         ['press_b_button', 'Press B Button', 'Purchase a boots upgrade'],
         ['brochure_expert', 'Brochure Expert', 'Purchase all upgrades'],
-        ['no_more_limits', 'No More Limits', 'Buy the full version of the game']
+        ['no_more_limits', 'No More Limits', 'Buy the full version of the game'],
+        ['apprenticeship_complete', 'Apprenticeship Complete', 'Finish your month at the Apothecary'],
+        ['top_of_the_class', 'Top of the Class', "Get a perfect score on all 3 paths of the Apprentice's Trial"]
     ];
     const generalAchievementKeys = achievementCatalog.map(([key]) => key);
     // The same 10 avatars as the game (Avatar01-Avatar10); the game and the website both save the chosen one in photoURL.
@@ -106,7 +108,8 @@
             achievements
         };
 
-        const accountFields = new Set(['email', 'account_type', 'photoURL', 'color', 'username', 'achievements']);
+        // (status / deletedAt / deletedBy: a soft-deleted account's mark - set and cleared only by the server)
+        const accountFields = new Set(['email', 'account_type', 'photoURL', 'color', 'username', 'achievements', 'status', 'deletedAt', 'deletedBy']);
         for (const existingField of Object.keys(profile)) {
             if (!accountFields.has(existingField)) updates[existingField] = null;
         }
@@ -182,6 +185,17 @@
             return true;
         }
         return snapshot.val() === uid;
+    }
+
+    // ---- Soft delete / restore / purge (netlify/functions/account.js): the signed-in user's token proves who asks.
+    async function accountAction(user, action, uid) {
+        const token = await user.getIdToken(true);
+        const response = await fetch('/.netlify/functions/account', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify(uid ? { action, uid } : { action })
+        });
+        if (!response.ok) throw new Error(`account-${action}-${response.status}`);
     }
 
     // ---- Removing an account: what goes, in one update. (report-times can only be cleared by its owner.)
@@ -293,6 +307,7 @@
         saveUsernameAndProfile,
         reserveExistingUsername,
         accountRemovalUpdates,
+        accountAction,
         anonymizeReports,
         escapeHtml,
         formatDate

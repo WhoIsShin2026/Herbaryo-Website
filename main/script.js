@@ -106,7 +106,7 @@ function emailLoginErrorText(error) {
         case 'auth/invalid-email': return "That email address isn't valid.";
         case 'auth/network-request-failed': return 'No internet connection. Check it and try again.';
         case 'auth/too-many-requests': return 'Too many tries. Wait a moment and try again.';
-        case 'auth/user-disabled': return 'This account has been turned off. Ask the admin.';
+        case 'auth/user-disabled': return 'This account was deleted. Ask the admin if you want it restored.';
         default: return 'Wrong email or password. Signed up with Google? Use the Google button.';
     }
 }

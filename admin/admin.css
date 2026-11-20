@@ -1521,3 +1521,214 @@ tbody tr:last-child td {
     height: 2.4rem;
     flex: 0 0 auto;
 }
+
+/* ---- Sales (view only) */
+.sales-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: .5rem;
+    height: 260px;
+    padding: 1rem;
+    background: var(--vanilla);
+    border: 4px solid var(--coffee);
+    box-shadow: var(--panel);
+    overflow-x: auto;
+}
+
+.sales-bar-col {
+    flex: 1 0 44px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+}
+
+.sales-bar {
+    width: 70%;
+    min-height: 2px;
+    background: var(--sage);
+    border: 3px solid var(--coffee);
+    border-bottom: 0;
+}
+
+.sales-bar-value {
+    margin-bottom: .25rem;
+    font-size: .75rem;
+    font-weight: 700;
+    color: var(--walnut);
+    white-space: nowrap;
+}
+
+.sales-bar-label {
+    margin-top: .35rem;
+    font-size: .72rem;
+    line-height: 1.15;
+    text-align: center;
+    color: var(--earth);
+}
+
+.sales-id {
+    font-family: monospace;
+    font-size: .85rem;
+}
+
+.sales-email {
+    font-size: .85rem;
+    color: var(--earth);
+}
+
+.sales-status {
+    padding: .15rem .5rem;
+    font-size: .8rem;
+    font-weight: 700;
+    color: var(--coffee);
+    background: var(--sage);
+    border: 2px solid var(--coffee);
+}
+
+@media (max-width: 650px) {
+    .sales-chart {
+        height: 200px;
+        padding: .6rem;
+    }
+
+    .sales-bar-value {
+        display: none;
+    }
+}
+
+/* ---- Soft delete */
+.player-deleted-tag {
+    padding: .05rem .4rem;
+    font-size: .72rem;
+    font-weight: 700;
+    color: var(--cream);
+    background: var(--danger);
+    border: 2px solid var(--coffee);
+}
+
+.btn-restore {
+    background: var(--sage);
+}
+
+/* ---- Trial questions: one compact table per path (hardest first, unanswered behind a toggle, answer on a tap) */
+.question-path {
+    margin-bottom: 1.25rem;
+    background: var(--vanilla);
+    border: 4px solid var(--coffee);
+    box-shadow: var(--panel);
+}
+
+.question-path h4 {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0;
+    padding: .7rem 1rem;
+    color: var(--vanilla);
+    background: var(--walnut);
+    border-bottom: 4px solid var(--coffee);
+}
+
+.question-path h4 span {
+    font-size: .85rem;
+    font-weight: 600;
+    opacity: .85;
+}
+
+.question-path .admin-note {
+    margin: 0;
+    padding: .8rem 1rem;
+}
+
+.question-row {
+    display: grid;
+    grid-template-columns: 3.2rem 1fr 4.5rem 4rem;
+    gap: .75rem;
+    align-items: center;
+    width: 100%;
+    padding: .6rem 1rem;
+    font: inherit;
+    font-size: .95rem;
+    color: var(--mocha);
+    text-align: left;
+    background: none;
+    border: 0;
+    border-bottom: 2px solid var(--champagne);
+}
+
+button.question-row {
+    cursor: pointer;
+}
+
+button.question-row:hover,
+button.question-row[aria-expanded="true"] {
+    background: var(--cream);
+}
+
+.question-head {
+    font-size: .8rem;
+    font-weight: 700;
+    color: var(--earth);
+}
+
+.question-id {
+    font-weight: 700;
+    color: var(--earth);
+}
+
+.question-num {
+    text-align: right;
+    font-weight: 700;
+}
+
+.question-answer {
+    margin: 0;
+    padding: .5rem 1rem .7rem 5.2rem;
+    font-size: .88rem;
+    color: var(--earth);
+    background: var(--cream);
+    border-bottom: 2px solid var(--champagne);
+}
+
+.question-more {
+    display: block;
+    width: 100%;
+    padding: .6rem 1rem;
+    font: inherit;
+    font-size: .88rem;
+    font-weight: 700;
+    color: var(--walnut);
+    text-align: left;
+    background: none;
+    border: 0;
+    border-bottom: 2px solid var(--champagne);
+    cursor: pointer;
+}
+
+.question-more:hover {
+    background: var(--cream);
+}
+
+.question-path > :last-child {
+    border-bottom: 0;
+}
+
+@media (max-width: 650px) {
+    .question-row {
+        grid-template-columns: 2.6rem 1fr 3.4rem 2.6rem;
+        gap: .5rem;
+        padding: .55rem .7rem;
+        font-size: .88rem;
+    }
+
+    .question-answer {
+        padding-left: .7rem;
+    }
+
+    .question-path h4 {
+        flex-direction: column;
+        gap: .2rem;
+    }
+}

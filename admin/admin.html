@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="./admin.css?v=5">
+    <link rel="stylesheet" href="./admin.css?v=7">
     <link rel="stylesheet" href="../main/motion.css">
 </head>
 
@@ -52,6 +52,8 @@
                 data-admin-tab="adminNewsPanel">News</button>
             <button class="admin-tab" type="button" role="tab" aria-selected="false"
                 data-admin-tab="adminTrialsPanel">Trials</button>
+            <button class="admin-tab" type="button" role="tab" aria-selected="false"
+                data-admin-tab="adminSalesPanel">Sales</button>
         </div>
 
         <div class="admin-panel" id="adminPlayersPanel">
@@ -75,6 +77,7 @@
                         <option value="">All</option>
                         <option value="premium">Full Game</option>
                         <option value="free">Free</option>
+                        <option value="deleted">Deleted</option>
                     </select>
                 </label>
             </div>
@@ -143,9 +146,65 @@
                     <p class="admin-note">Loading Trials...</p>
                 </div>
                 <h3 class="trial-questions-title">Questions</h3>
-                <p class="admin-card-info">How many players got each question right, lowest first. Counted once per player, on their first answer.</p>
+                <p class="admin-card-info">Each path&rsquo;s questions, hardest first. Counted once per player, on their first answer. Tap a question to see its answer.</p>
                 <div class="admin-card-list" id="adminTrialQuestions">
                     <p class="admin-note">Loading questions...</p>
+                </div>
+            </section>
+        </div>
+
+        <div class="admin-panel" id="adminSalesPanel" hidden>
+            <section class="admin-stats">
+                <h2>Sales</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="salesTotal">&#8369;0</div>
+                        <div class="stat-label">Total revenue</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="salesCount">0</div>
+                        <div class="stat-label">Purchases</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="salesMonth">&#8369;0</div>
+                        <div class="stat-label" id="salesMonthLabel">This month</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="users-section">
+                <h2>Revenue per Month</h2>
+                <div class="sales-chart" id="salesChart" role="img" aria-label="Revenue per month for the last 12 months"></div>
+            </section>
+
+            <section class="users-section">
+                <h2>Transactions</h2>
+                <div class="search-section admin-filters player-tools">
+                    <input type="text" id="salesSearch" placeholder="Search by buyer or transaction ID...">
+                    <label class="field-group">Month
+                        <select id="salesMonthFilter">
+                            <option value="">All months</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="table-container">
+                    <table id="salesTable">
+                        <thead>
+                            <tr>
+                                <th>Transaction ID</th>
+                                <th>Date</th>
+                                <th>Buyer</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="6">Loading sales...</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </section>
         </div>
@@ -195,7 +254,7 @@
 
     <footer class="footer">
         <div class="container">
-            <p>© 2026 Herbaryo - A Capstone Project by Real's Group. Preserving Philippine herbal knowledge through
+            <p>© 2026 Herbaryo - A Capstone Project by Team Herbaryo. Preserving Philippine herbal knowledge through
                 gamification.</p>
         </div>
     </footer>
@@ -205,8 +264,8 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
     <script defer src="../main/firebase-config.js"></script>
     <script defer src="../main/database-schema.js"></script>
-    <script defer src="../main/trial-questions.js?v=1"></script>
-    <script defer src="./admin.js?v=7"></script>
+    <script defer src="../main/trial-questions.js?v=2"></script>
+    <script defer src="./admin.js?v=11"></script>
 </body>
 
 </html>

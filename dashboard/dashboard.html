@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="./dashboard.css">
+    <link rel="stylesheet" href="./dashboard.css?v=2">
     <link rel="stylesheet" href="../main/motion.css">
 </head>
 
@@ -52,6 +52,7 @@
                     title="Full Game" width="128" height="128" hidden>
             </div>
             <h1 id="welcomeText">Greetings, Herbalist</h1>
+            <a class="btn-save get-full-game-btn" id="getFullGameBtn" href="../buy/buy.html" hidden>Get the Full Game &middot; &#8369;49</a>
         </section>
 
         <section class="verify-notice" id="verifyNotice" hidden>
@@ -128,7 +129,7 @@
                         </svg>
                     </button>
                 </div>
-                <strong class="mastery-total" id="achievementCount">0/14</strong>
+                <strong class="mastery-total" id="achievementCount">0/16</strong>
             </div>
             <div class="section-content" id="accountAchievementsContent">
                 <div class="achievement-grid" id="achievementList"></div>
@@ -191,8 +192,8 @@
                 <h2>Delete My Account</h2>
             </div>
             <div class="delete-account-card">
-                <p>This permanently removes your account, username, progress and achievements. Saves already on your
-                    phone stay on your phone.</p>
+                <p>This turns your account off and signs you out everywhere. Your progress and achievements are kept, and
+                    the admin can restore your account if you ask. Saves already on your phone stay on your phone.</p>
                 <button class="delete-account-btn" id="deleteAccountBtn" type="button">Delete My Account</button>
             </div>
         </section>
@@ -200,7 +201,7 @@
 
     <footer class="footer">
         <div class="container">
-            <p>© 2026 Herbaryo - A Capstone Project by Real's Group. Preserving Philippine herbal knowledge through
+            <p>© 2026 Herbaryo - A Capstone Project by Team Herbaryo. Preserving Philippine herbal knowledge through
                 gamification.</p>
         </div>
     </footer>

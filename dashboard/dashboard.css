@@ -1622,3 +1622,14 @@ label.edit-field[hidden] {
         grid-column: auto;
     }
 }
+
+/* ---- Get the Full Game (a free account) */
+.get-full-game-btn {
+    display: inline-block;
+    margin-top: 1rem;
+    text-decoration: none;
+}
+
+.get-full-game-btn[hidden] {
+    display: none;
+}

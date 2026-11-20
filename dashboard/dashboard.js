@@ -28,6 +28,7 @@ function updateUserUI(userData) {
         userData.account_type === 'premium' ? 'Full Game' : 'Free';
 
     document.getElementById('heroFullBadge').hidden = userData.account_type !== 'premium';
+    document.getElementById('getFullGameBtn').hidden = userData.account_type === 'premium';   // a free account: the Buy page
     avatar.textContent = getInitials(displayName);
     avatar.style.backgroundImage = `url("${HerbaryoSchema.normalizeAvatar(userData.photoURL)}")`;
     avatar.style.setProperty('--profile-color', HerbaryoSchema.normalizeColor(userData.color));
@@ -719,13 +720,13 @@ const deleteAccountModal = createProfileModal('delete-account-modal', `
         aria-labelledby="deleteAccountTitle">
         <header class="edit-header">
             <div>
-                <span class="edit-kicker">This cannot be undone</span>
+                <span class="edit-kicker">The admin can restore it</span>
                 <h2 id="deleteAccountTitle">Delete your account?</h2>
             </div>
             <button class="edit-close" id="closeDeleteAccountBtn" type="button" aria-label="Close">&times;</button>
         </header>
-        <p class="edit-note">Your account, username, progress and achievements will be removed. Your reports stay
-            with the team as "Deleted player".</p>
+        <p class="edit-note">Your account will be turned off and you will be signed out. Your username, progress and
+            achievements are kept, so the admin can restore your account if you ask.</p>
         <label class="edit-field delete-account-field" for="deleteConfirmName">Type your username to confirm
             <input type="text" id="deleteConfirmName" autocomplete="off" required>
         </label>
@@ -736,7 +737,7 @@ const deleteAccountModal = createProfileModal('delete-account-modal', `
         <p class="edit-error" id="deleteAccountError" role="alert"></p>
         <div class="edit-buttons">
             <button type="button" class="btn-cancel" id="cancelDeleteAccountBtn">Keep my account</button>
-            <button type="submit" class="delete-account-btn" id="confirmDeleteAccountBtn">Delete forever</button>
+            <button type="submit" class="delete-account-btn" id="confirmDeleteAccountBtn">Delete account</button>
         </div>
     </form>
 `);
@@ -806,12 +807,11 @@ document.getElementById('deleteAccountForm').addEventListener('submit', async ev
         }
         await confirmIdentity(user);
 
-        // The data goes first: once the account itself is gone, the rules can't allow anything.
+        // Soft delete (Shin LOCK 2026-11-21): the server turns the login off and marks the account deleted - nothing is
+        // erased, and the admin can restore it.
         deletingAccount = true;
-        const updates = await HerbaryoSchema.accountRemovalUpdates(db, user.uid, username, true);
-        await HerbaryoSchema.anonymizeReports(db, user.uid);
-        await db.ref().update(updates);
-        await user.delete();
+        await HerbaryoSchema.accountAction(user, 'delete');
+        await auth.signOut().catch(() => {});
         window.location.replace('../index.html');
     } catch (deleteError) {
         console.error('Failed to delete the account:', deleteError);
@@ -819,7 +819,7 @@ document.getElementById('deleteAccountForm').addEventListener('submit', async ev
         error.textContent = deleteAccountErrorText(deleteError);
     } finally {
         button.disabled = false;
-        button.textContent = 'Delete forever';
+        button.textContent = 'Delete account';
     }
 });
 
@@ -870,7 +870,7 @@ function renderTrials(attempts) {
 
     const list = document.getElementById('myTrials');
     if (!attempts.length) {
-        list.innerHTML = '<p class="panel-note">You have not taken the Trial yet. Open the game and tap Trial on the Main Menu.</p>';
+        list.innerHTML = '<p class="panel-note">You have not taken the Trial yet. Finish your month at the Apothecary in the game, then tap Trial on the Main Menu.</p>';
         return;
     }
     list.innerHTML = attempts.map(attempt => `

@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadReports();
                 loadNewsAdmin();
                 loadTrialsAdmin();
+                loadSales();
             } else {
                 showAdminAccessStatus(
                     `No admin role found for this account. In Realtime Database, set /admins/${user.uid} to the boolean true.`
@@ -50,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function applyPlayerFilters() {
         const query = (searchInput ? searchInput.value : '').toLowerCase();
         const type = playerTypeFilter ? playerTypeFilter.value : '';
-        displayUsers(allUsers.filter(u => (!type || u.account_type === type)
+        displayUsers(allUsers.filter(u => (type === 'deleted' ? u.deleted : !u.deleted && (!type || u.account_type === type))
             && (u.username.toLowerCase().includes(query) || u.email.toLowerCase().includes(query))));
     }
 
@@ -179,7 +180,8 @@ document.addEventListener('DOMContentLoaded', () => {
             username: profile.username || 'Unknown',
             email: profile.email || '',
             account_type: profile.account_type === 'premium' ? 'premium' : 'free',
-            photoURL: HerbaryoSchema.normalizeAvatar(profile.photoURL)
+            photoURL: HerbaryoSchema.normalizeAvatar(profile.photoURL),
+            deleted: profile.status === 'deleted'   // soft-deleted: hidden unless Show: Deleted
         };
     }
 
@@ -219,6 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateStats(users);
             applyPlayerFilters();
             renderTrials();   // (the Trials list needs the players' names)
+            if (allSales.length) renderSalesTable();   // (and the Sales, the buyers' names)
         } catch (err) {
             console.error('Failed to load users:', err);
             const tbody = document.querySelector('#usersTable tbody');
@@ -251,6 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="player-name-cell">
                         <img class="player-avatar" src="${HerbaryoSchema.normalizeAvatar(user.photoURL)}" alt="">
                         <span>${HerbaryoSchema.escapeHtml(user.username)}</span>
+                        ${user.deleted ? '<span class="player-deleted-tag">Deleted</span>' : ''}
                         ${user.isAdmin ? adminBadge : ''}
                         ${user.account_type === 'premium' ? `<img class="player-full-badge" src="${HerbaryoSchema.fullGameIcon}" alt="Full Game" title="Full Game" width="128" height="128">` : ''}
                     </span>
@@ -259,14 +263,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>
                     <button class="action-btn btn-view" data-uid="${user.uid}">View</button>
                     <button class="action-btn btn-edit" data-uid="${user.uid}">Edit</button>
-                    ${user.isAdmin ? '' : `<button class="action-btn btn-delete" data-uid="${user.uid}">Delete</button>`}
+                    ${user.isAdmin ? '' : user.deleted
+                        ? `<button class="action-btn btn-restore" data-uid="${user.uid}">Restore</button>
+                           <button class="action-btn btn-delete btn-purge" data-uid="${user.uid}">Delete permanently</button>`
+                        : `<button class="action-btn btn-delete" data-uid="${user.uid}">Delete</button>`}
                 </td>
             </tr>
         `).join('');
 
         document.querySelectorAll('.btn-view').forEach(btn => btn.onclick = () => showUserModal(allUsers.find(u => u.uid === btn.dataset.uid)));
         document.querySelectorAll('.btn-edit').forEach(btn => btn.onclick = () => showEditModal(btn.dataset.uid, allUsers.find(u => u.uid === btn.dataset.uid)));
-        document.querySelectorAll('.btn-delete').forEach(btn => btn.onclick = () => deleteUser(btn.dataset.uid, btn));
+        document.querySelectorAll('.btn-delete:not(.btn-purge)').forEach(btn => btn.onclick = () => deleteUser(btn.dataset.uid, btn));
+        document.querySelectorAll('.btn-purge').forEach(btn => btn.onclick = () => deleteUser(btn.dataset.uid, btn, true));
+        document.querySelectorAll('.btn-restore').forEach(btn => btn.onclick = () => restoreUser(btn.dataset.uid, btn));
     }
 
     function showAdminToast(message, type) {
@@ -278,7 +287,23 @@ document.addEventListener('DOMContentLoaded', () => {
         window.setTimeout(() => toast.remove(), 3500);
     }
 
-    function deleteUser(uid, trigger) {
+    // Restore a soft-deleted player: their login works again and they show in the list as before.
+    async function restoreUser(uid, trigger) {
+        trigger.disabled = true;
+        try {
+            await HerbaryoSchema.accountAction(auth.currentUser, 'restore', uid);
+            showAdminToast('Player restored.', 'success');
+            await loadUsers();
+        } catch (err) {
+            console.error('Failed to restore player:', err);
+            trigger.disabled = false;
+            showAdminToast('Failed to restore the player. Please try again.', 'error');
+        }
+    }
+
+    // Delete (soft, Shin LOCK 2026-11-21): the login is turned off and the player is hidden - everything is kept.
+    // Delete permanently (permanent = true, only for a deleted player): their data and their login are removed for good.
+    function deleteUser(uid, trigger, permanent = false) {
         const player = allUsers.find(user => user.uid === uid);
         if (player?.isAdmin) return;   // remove the admin role in Firebase first
         const modal = document.createElement('div');
@@ -286,11 +311,13 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.innerHTML = `
             <section class="delete-dialog" role="alertdialog" aria-modal="true" aria-labelledby="deleteDialogTitle" aria-describedby="deleteDialogDescription">
                 <span class="delete-dialog-kicker">Manage Players</span>
-                <h2 id="deleteDialogTitle">Delete ${HerbaryoSchema.escapeHtml(player?.username || 'this player')}?</h2>
-                <p id="deleteDialogDescription">This permanently removes the player's profile, progress and achievements, and frees their username. Their reports stay as "Deleted player". Their login is not removed, so they can sign up again as a new player.</p>
+                <h2 id="deleteDialogTitle">${permanent ? 'Delete permanently' : 'Delete'} ${HerbaryoSchema.escapeHtml(player?.username || 'this player')}?</h2>
+                <p id="deleteDialogDescription">${permanent
+                    ? 'This cannot be undone. It removes the player\'s profile, progress, achievements and login for good, and frees their username. Their reports stay as "Deleted player".'
+                    : 'This turns off the player\'s login and hides them from the list. Their profile, progress and achievements are kept. You can restore them from Show: Deleted.'}</p>
                 <div class="delete-dialog-actions">
                     <button class="delete-cancel-btn" id="cancelDeleteBtn" type="button">Cancel</button>
-                    <button class="delete-confirm-btn" id="confirmDeleteBtn" type="button">Delete player</button>
+                    <button class="delete-confirm-btn" id="confirmDeleteBtn" type="button">${permanent ? 'Delete permanently' : 'Delete player'}</button>
                 </div>
             </section>`;
         document.body.appendChild(modal);
@@ -317,11 +344,16 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmButton.textContent = 'Deleting...';
 
             try {
-                const updates = await HerbaryoSchema.accountRemovalUpdates(db, uid, player?.username, false);
-                await HerbaryoSchema.anonymizeReports(db, uid);
-                await db.ref().update(updates);
+                if (permanent) {
+                    const updates = await HerbaryoSchema.accountRemovalUpdates(db, uid, player?.username, false);
+                    await HerbaryoSchema.anonymizeReports(db, uid);
+                    await db.ref().update(updates);
+                    await HerbaryoSchema.accountAction(auth.currentUser, 'purge', uid);   // and the login
+                } else {
+                    await HerbaryoSchema.accountAction(auth.currentUser, 'delete', uid);
+                }
                 closeModal();
-                showAdminToast('Player deleted successfully.', 'success');
+                showAdminToast(permanent ? 'Player deleted permanently.' : 'Player deleted. You can restore them from Show: Deleted.', 'success');
                 await loadUsers();
             } catch (err) {
                 console.error('Failed to delete player:', err);
@@ -540,17 +572,130 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateStats(users) {
+        const active = users.filter(user => !user.deleted);
         const totalUsersEl = document.getElementById('totalUsers');
-        if (totalUsersEl) totalUsersEl.textContent = users.length;
+        if (totalUsersEl) totalUsersEl.textContent = active.length;
 
         const splitEl = document.getElementById('totalUsersSplit');
         if (splitEl) {
-            const fullGame = users.filter(user => user.account_type === 'premium').length;
-            splitEl.textContent = `${fullGame} Full Game · ${users.length - fullGame} Free`;
+            const fullGame = active.filter(user => user.account_type === 'premium').length;
+            const deleted = users.length - active.length;
+            splitEl.textContent = `${fullGame} Full Game · ${active.length - fullGame} Free` + (deleted ? ` · ${deleted} deleted` : '');
         }
     }
 
-    // ---- The three tabs: Players, Reports, News
+    // ---- Sales (Shin LOCK 2026-11-21): view only, admins only - what the server wrote in /purchases when a Full Game was paid
+    // (PayMongo) or bought through the Simulated Checkout. Amounts are in centavos. Every purchase counts, and only how it was
+    // paid is shown (Shin LOCK 2026-11-21: no "simulated" wording on the site).
+    let allSales = [];
+
+    function loadSales() {
+        document.getElementById('salesSearch').addEventListener('input', renderSalesTable);
+        document.getElementById('salesMonthFilter').addEventListener('change', renderSalesTable);
+        db.ref('purchases').on('value', snapshot => {
+            const sales = [];
+            snapshot.forEach(child => {
+                const p = child.val() || {};
+                sales.push({
+                    id: child.key,
+                    uid: p.uid || '',
+                    amount: Number(p.amount) || 0,
+                    paidAt: Number(p.paidAt) || 0,
+                    simulated: p.simulated === true,
+                    livemode: p.livemode === true,
+                    method: p.method || ''
+                });
+            });
+            sales.sort((a, b) => b.paidAt - a.paidAt);
+            allSales = sales;
+            renderSales();
+        }, error => {
+            console.error('Failed to load sales:', error);
+            document.querySelector('#salesTable tbody').innerHTML =
+                '<tr><td colspan="6">Sales could not be loaded. Check the Firebase rules for admin read access to /purchases.</td></tr>';
+        });
+    }
+
+    const peso = centavos => '\u20B1' + (centavos / 100).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    const monthKey = ms => { const d = new Date(ms); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
+    const monthName = key => { const [y, m] = key.split('-').map(Number); return new Date(y, m - 1, 1).toLocaleString('en-US', { month: 'short', year: 'numeric' }); };
+
+    function shownSales() {
+        return allSales;
+    }
+
+    function renderSales() {
+        const sales = shownSales();
+        const now = monthKey(Date.now());
+        document.getElementById('salesTotal').textContent = peso(sales.reduce((sum, s) => sum + s.amount, 0));
+        document.getElementById('salesCount').textContent = sales.length;
+        document.getElementById('salesMonth').textContent = peso(sales.filter(s => monthKey(s.paidAt) === now).reduce((sum, s) => sum + s.amount, 0));
+        document.getElementById('salesMonthLabel').textContent = 'This month (' + monthName(now) + ')';
+        renderSalesChart(sales);
+
+        // The month filter lists the months that have sales.
+        const filter = document.getElementById('salesMonthFilter');
+        const chosen = filter.value;
+        const months = [...new Set(sales.map(s => monthKey(s.paidAt)))].sort().reverse();
+        filter.innerHTML = '<option value="">All months</option>' +
+            months.map(key => `<option value="${key}">${monthName(key)}</option>`).join('');
+        filter.value = months.includes(chosen) ? chosen : '';
+        renderSalesTable();
+    }
+
+    // The last 12 months, oldest first: one bar each, as tall as its revenue against the best month.
+    function renderSalesChart(sales) {
+        const keys = [];
+        const d = new Date();
+        d.setDate(1);
+        for (let i = 11; i >= 0; i--) keys.push(monthKey(new Date(d.getFullYear(), d.getMonth() - i, 1).getTime()));
+        const totals = keys.map(key => sales.filter(s => monthKey(s.paidAt) === key).reduce((sum, s) => sum + s.amount, 0));
+        const best = Math.max(...totals, 1);
+        document.getElementById('salesChart').innerHTML = keys.map((key, i) => `
+            <div class="sales-bar-col" title="${monthName(key)}: ${peso(totals[i])}">
+                <span class="sales-bar-value">${totals[i] ? peso(totals[i]) : ''}</span>
+                <div class="sales-bar" style="height:${Math.round(totals[i] / best * 100)}%"></div>
+                <span class="sales-bar-label">${monthName(key).replace(' ', '<br>')}</span>
+            </div>`).join('');
+    }
+
+    function buyerOf(uid) {
+        const player = allUsers.find(user => user.uid === uid);
+        return player ? { name: player.username, email: player.email } : { name: 'Unknown player', email: uid };
+    }
+
+    function methodOf(sale) {
+        return { gcash: 'GCash', maya: 'Maya', card: 'Card', paymaya: 'Maya', grab_pay: 'GrabPay' }[sale.method] || 'Online';
+    }
+
+    function renderSalesTable() {
+        const esc = HerbaryoSchema.escapeHtml;
+        const query = document.getElementById('salesSearch').value.trim().toLowerCase();
+        const month = document.getElementById('salesMonthFilter').value;
+        const rows = shownSales().filter(sale => {
+            if (month && monthKey(sale.paidAt) !== month) return false;
+            if (!query) return true;
+            const buyer = buyerOf(sale.uid);
+            return [sale.id, buyer.name, buyer.email].some(text => String(text).toLowerCase().includes(query));
+        });
+        document.querySelector('#salesTable tbody').innerHTML = rows.length
+            ? rows.map(sale => {
+                const buyer = buyerOf(sale.uid);
+                const shortId = sale.id.length > 18 ? sale.id.slice(0, 18) + '\u2026' : sale.id;
+                return `
+                <tr>
+                    <td><span class="sales-id" title="${esc(sale.id)}">${esc(shortId)}</span></td>
+                    <td>${esc(new Date(sale.paidAt).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }))}</td>
+                    <td><strong>${esc(buyer.name)}</strong><br><span class="sales-email">${esc(buyer.email)}</span></td>
+                    <td>${peso(sale.amount)}</td>
+                    <td>${esc(methodOf(sale))}</td>
+                    <td><span class="sales-status">Paid</span></td>
+                </tr>`;
+            }).join('')
+            : '<tr><td colspan="6">No sales to show.</td></tr>';
+    }
+
+    // ---- The tabs: Players, Reports, News, Trials, Sales
     function initAdminTabs() {
         const tabs = document.getElementById('adminTabs');
         tabs.hidden = false;
@@ -621,39 +766,81 @@ document.addEventListener('DOMContentLoaded', () => {
     // ---- The Trial's questions: % right per question (trial-stats/questions, counted by the game by id)
     let questionStats = {};
 
+    // One compact table per path (Shin LOCK 2026-11-21): hardest first, unanswered ones behind a toggle, the answer on a tap.
+    const openAnswers = new Set();      // question ids showing their answer
+    const showUnanswered = new Set();   // path keys showing their unanswered questions
+
+    function questionRow(row, esc) {
+        const open = openAnswers.has(row.question.id);
+        return `
+            <button class="question-row" type="button" data-question="${esc(row.question.id)}" aria-expanded="${open}">
+                <span class="question-id">${esc(row.question.id)}</span>
+                <span class="question-text">${esc(row.question.text)}</span>
+                <span class="question-num">${row.percent === null ? '&ndash;' : `${row.percent}%`}</span>
+                <span class="question-num">${row.asked}</span>
+            </button>
+            <p class="question-answer"${open ? '' : ' hidden'}>Answer: ${esc(row.question.answer)}</p>`;
+    }
+
     function renderTrialQuestions() {
         const esc = HerbaryoSchema.escapeHtml;
         const bank = window.HerbaryoTrialQuestions || {};
         const filter = document.getElementById('trialPathFilter').value;
-        const rows = [];
-        Object.keys(HerbaryoSchema.trialPaths).filter(key => !filter || key === filter).forEach(key => {
-            (bank[key] || []).forEach(question => {
+        const tables = Object.keys(HerbaryoSchema.trialPaths).filter(key => !filter || key === filter).map(key => {
+            const rows = (bank[key] || []).map(question => {
                 const stat = questionStats[question.id] || {};
                 const asked = Number(stat.asked) || 0;
                 const right = Number(stat.right) || 0;
-                rows.push({ key, question, asked, percent: asked > 0 ? Math.round(right / asked * 100) : null });
+                return { question, asked, percent: asked > 0 ? Math.round(right / asked * 100) : null };
             });
-        });
-        // Lowest first; not answered yet at the end.
-        rows.sort((a, b) => (a.percent === null) - (b.percent === null) || (a.percent ?? 0) - (b.percent ?? 0) || a.question.id.localeCompare(b.question.id));
-        document.getElementById('adminTrialQuestions').innerHTML = rows.length
-            ? rows.map(row => `
-                <article class="admin-card">
-                    <div class="admin-card-head">
-                        <strong>${row.percent === null ? 'Not answered yet' : `${row.percent}% right`}</strong>
-                        <span>${esc(row.question.id)}</span>
-                        <span>${esc(HerbaryoSchema.trialPaths[row.key])}</span>
-                        <span>${row.asked} player${row.asked === 1 ? '' : 's'}</span>
+            if (!rows.length) return '';
+            const answered = rows.filter(row => row.percent !== null)
+                .sort((a, b) => a.percent - b.percent || b.asked - a.asked || a.question.id.localeCompare(b.question.id));
+            const unanswered = rows.filter(row => row.percent === null).sort((a, b) => a.question.id.localeCompare(b.question.id));
+            const showing = showUnanswered.has(key);
+            return `
+                <section class="question-path">
+                    <h4>${esc(HerbaryoSchema.trialPaths[key])} <span>${answered.length} of ${rows.length} answered</span></h4>
+                    ${answered.length ? `
+                    <div class="question-row question-head" aria-hidden="true">
+                        <span>#</span><span>Question</span><span class="question-num">% right</span><span class="question-num">Players</span>
                     </div>
-                    <p class="admin-card-text">${esc(row.question.text)}</p>
-                    <p class="admin-card-info">Answer: ${esc(row.question.answer)}</p>
-                </article>`).join('')
-            : '<p class="admin-note">No questions.</p>';
+                    ${answered.map(row => questionRow(row, esc)).join('')}` : '<p class="admin-note">No answers yet.</p>'}
+                    ${unanswered.length ? `
+                    <button class="question-more" type="button" data-path="${esc(key)}" aria-expanded="${showing}">${showing ? 'Hide' : 'Show'} unanswered (${unanswered.length})</button>
+                    ${showing ? unanswered.map(row => questionRow(row, esc)).join('') : ''}` : ''}
+                </section>`;
+        }).join('');
+        document.getElementById('adminTrialQuestions').innerHTML = tables || '<p class="admin-note">No questions.</p>';
+    }
+
+    // A tap on the list: a row shows or hides its answer, "Show unanswered" opens that path's rest. (One listener - the
+    // list is drawn again whenever the counts change, and what's open stays open.)
+    function onTrialQuestionsClick(event) {
+        const more = event.target.closest('.question-more');
+        if (more) {
+            const key = more.dataset.path;
+            if (showUnanswered.has(key)) showUnanswered.delete(key); else showUnanswered.add(key);
+            renderTrialQuestions();
+            return;
+        }
+        const row = event.target.closest('.question-row[data-question]');
+        if (!row) return;
+        const id = row.dataset.question;
+        if (openAnswers.has(id)) openAnswers.delete(id); else openAnswers.add(id);
+        row.setAttribute('aria-expanded', String(openAnswers.has(id)));
+        const answer = row.nextElementSibling;
+        if (answer && answer.classList.contains('question-answer')) answer.hidden = !openAnswers.has(id);
     }
 
     function loadTrialsAdmin() {
         document.getElementById('trialPathFilter').addEventListener('change', renderTrials);
         document.getElementById('trialPathFilter').addEventListener('change', renderTrialQuestions);
+        const questionList = document.getElementById('adminTrialQuestions');
+        if (!questionList.dataset.wired) {   // once (a second sign-in would toggle twice = nothing)
+            questionList.dataset.wired = '1';
+            questionList.addEventListener('click', onTrialQuestionsClick);
+        }
         db.ref('trial-stats/questions').on('value', snapshot => {
             questionStats = snapshot.val() || {};
             renderTrialQuestions();
